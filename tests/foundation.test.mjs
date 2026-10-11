@@ -16,7 +16,10 @@ test("foundation exposes the namespaced start command and orchestration skill", 
   const command = await readFile(new URL("../commands/start.md", import.meta.url), "utf8");
   const skill = await readFile(new URL("../skills/keelokit-studio/SKILL.md", import.meta.url), "utf8");
   assert.match(command, /^---[\s\S]+description:/);
+  assert.match(command, /environment-variable name or secret-manager reference/);
+  assert.match(command, /never ask the user to paste a key, token, password/);
   assert.match(skill, /^---[\s\S]+name: keelokit-studio/m);
   assert.match(skill, /Silence is not approval/);
+  assert.match(skill, /never request or persist secret values/);
 });
 

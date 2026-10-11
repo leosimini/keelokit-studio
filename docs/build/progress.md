@@ -89,6 +89,8 @@ C04 — production and review.
 - C05 distribution, budget/job recovery, selective refresh, evidence-derived guides and the persistent dashboard pass focused and full tests. High-reasoning review reproduced package/QA identity, paid-job reservation, guide omission, dashboard XSS/path and publication-integrity defects; all were fixed and confirmed closed.
 - `npm run verify:portability`: pass for field-service and learning-platform fixtures with different audience counts; source/schema/command/skill scan contains no fixture/example leakage.
 - `npm run verify`: pass for all tests, portability, Claude Code strict validation, isolated marketplace installation and real plugin inventory load.
+- Read-only live dry run against Keelokit commit `ae9966c4994438332a3ff5c1497ce499ae117c9b`: six sources discovered, strict Claude Code marketplace validation passed, brief/plan/storyboard contracts generated, a real 640×360 Remotion pilot still rendered, mechanical PNG export passed, and visual inspection passed. Overall QA remains limited because the approved dry-run scope excluded audio and a complete timed video; the input repository remained clean at the same commit.
+- The live dry run exposed an intake documentation gap. The start command and orchestration skill now require scope-relevant provider/configuration, limits, capability checks, and safe credential references while explicitly prohibiting raw secrets in prompts or persisted outputs.
 
 ## Blockers and limits
 
