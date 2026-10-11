@@ -7,13 +7,18 @@ const planHash = `sha256:${"a".repeat(64)}`;
 const styleHash = `sha256:${"b".repeat(64)}`;
 const approval = (approval_id, kind, scope, subject_hash) => ({approval_id, kind, scope, confirmed_by: "owner", confirmed_at: "2026-10-11T13:00:00.000Z", subject_version: 1, subject_hash, explicit_method: "conversation", status: "approved"});
 
+const briefHash = `sha256:${"f".repeat(64)}`;
+function withBrief(state) {
+  return addApproval(setCurrentSubject(state, "brief", {kind: "brief", scope: "brief-main", version: 1, hash: briefHash, piece_ids: []}), approval("brief-v1", "brief", "brief-main", briefHash));
+}
+
 function awaitingPlan() {
   let state = createInitialState("consumer-demo");
   state.engagement_phase = "awaiting_plan_approval";
   state.pieces.push(createPieceState("piece-pilot"));
   state = setCurrentSubject(state, "plan", {scope: "plan-main", version: 1, hash: planHash, piece_ids: ["piece-pilot"]});
   state = setCurrentSubject(state, "style", {scope: "style-main", version: 1, hash: styleHash, piece_ids: ["piece-pilot"]});
-  return state;
+  return withBrief(state);
 }
 
 test("blocks pilot and production without plan and style approvals", () => {
@@ -28,7 +33,7 @@ test("blocks pilot and production without plan and style approvals", () => {
 
 test("does not substitute another approval kind or an old subject version", () => {
   let state = awaitingPlan();
-  state = addApproval(state, approval("brief-v1", "brief", "plan-main", planHash));
+  state = addApproval(state, approval("brief-other", "brief", "plan-main", planHash));
   assert.throws(() => transitionEngagement(state, "producing", {productionPieceIds: ["piece-pilot"]}), TransitionError);
 
   state = addApproval(state, approval("plan-v1", "plan", "plan-main", planHash));
@@ -46,11 +51,55 @@ test("pilot pieces must belong to the persisted approved plan", () => {
 });
 
 test("does not infer publication from ready", () => {
-  const state = createInitialState("consumer-demo");
-  state.engagement_phase = "reviewing";
-  const ready = transitionEngagement(state, "ready");
+  const state = reviewingWithApprovals();
+  const ready = transitionEngagement(state, "ready", {readyPieceIds: ["piece-a"]});
   assert.equal(ready.engagement_phase, "ready");
   assert.equal("published" in ready, false);
+});
+
+function reviewingWithApprovals() {
+  let state = readyState("piece-a");
+  state.engagement_phase = "reviewing";
+  state = setCurrentSubject(state, "style", {scope: "style-main", version: 1, hash: styleHash, piece_ids: ["piece-a"]});
+  return addApproval(state, approval("style-v1", "style", "style-main", styleHash));
+}
+
+test("ready requires named pieces whose render and QA are valid and whose style approval is current", () => {
+  const state = reviewingWithApprovals();
+  assert.throws(() => transitionEngagement(state, "ready"), /readyPieceIds/);
+  assert.throws(() => transitionEngagement(state, "ready", {readyPieceIds: ["unknown"]}), TransitionError);
+  const unqa = structuredClone(state);
+  unqa.pieces[0].components.qa = "stale";
+  assert.throws(() => transitionEngagement(unqa, "ready", {readyPieceIds: ["piece-a"]}), /qa/);
+  const unstyled = structuredClone(state);
+  delete unstyled.versions.style;
+  assert.throws(() => transitionEngagement(unstyled, "ready", {readyPieceIds: ["piece-a"]}), TransitionError);
+});
+
+test("a piece cannot be ready with missing render or QA", () => {
+  const state = createInitialState("consumer-demo");
+  state.pieces.push({...createPieceState("piece-x"), status: "ready"});
+  assert.throws(() => addApproval(state, approval("x", "plan", "p", planHash)), /render|qa|ready/);
+});
+
+test("blocked resumes only at the phase it interrupted or earlier planning phases", () => {
+  let state = reviewingWithApprovals();
+  state = transitionEngagement(state, "blocked");
+  assert.throws(() => transitionEngagement(state, "producing", {productionPieceIds: ["piece-a"]}), TransitionError);
+  assert.throws(() => transitionEngagement(state, "ready"), TransitionError);
+  assert.equal(transitionEngagement(state, "reviewing").engagement_phase, "reviewing");
+  let hand = createInitialState("consumer-demo");
+  hand.engagement_phase = "blocked";
+  assert.throws(() => transitionEngagement(hand, "reviewing"), TransitionError);
+});
+
+test("pilot and production require a current brief approval", () => {
+  const state = awaitingPlan();
+  const unbriefed = structuredClone(state);
+  delete unbriefed.versions.brief;
+  const planApproved = addApproval(unbriefed, approval("plan-v1", "plan", "plan-main", planHash));
+  assert.throws(() => transitionEngagement(planApproved, "pilot_in_progress", {pilotPieceIds: ["piece-pilot"]}), /brief/);
+  assert.throws(() => transitionEngagement(Object.assign(structuredClone(unbriefed), {engagement_phase: "plan_draft"}), "awaiting_plan_approval"), TransitionError);
 });
 
 function readyState(...pieceIds) {
@@ -78,6 +127,7 @@ test("invalidates only selected pieces and their affected style subject", () => 
   state = setCurrentSubject(state, "plan", {scope: "plan-main", version: 1, hash: planHash, piece_ids: ["piece-a", "piece-b"]});
   state = setCurrentSubject(state, "style", {scope: "style-main", version: 1, hash: styleHash, piece_ids: ["piece-a"]});
   state = setCurrentSubject(state, "style-b", {scope: "style-b", version: 1, hash: `sha256:${"d".repeat(64)}`, piece_ids: ["piece-b"]});
+  state = withBrief(state);
   state = addApproval(state, approval("plan-v1", "plan", "plan-main", planHash));
   state = addApproval(state, approval("style-v1", "style", "style-main", styleHash));
   state = addApproval(state, approval("style-b-v1", "style", "style-b", `sha256:${"d".repeat(64)}`));
@@ -98,6 +148,7 @@ test("production requires style coverage for every selected piece", () => {
   state.engagement_phase = "awaiting_plan_approval";
   state = setCurrentSubject(state, "plan", {scope: "plan-main", version: 1, hash: planHash, piece_ids: ["piece-a", "piece-b"]});
   state = setCurrentSubject(state, "style", {scope: "style-main", version: 1, hash: styleHash, piece_ids: ["piece-a"]});
+  state = withBrief(state);
   state = addApproval(state, approval("plan-v1", "plan", "plan-main", planHash));
   state = addApproval(state, approval("style-v1", "style", "style-main", styleHash));
   assert.doesNotThrow(() => transitionEngagement(state, "producing", {productionPieceIds: ["piece-a"]}));

@@ -70,9 +70,21 @@ function requireApproval(state, kind, subjectKey, label) {
   return subject;
 }
 
+const planningPhases = new Set(["interviewing", "brief_draft", "plan_draft"]);
+
+function interruptedPhase(state) {
+  const entered = state.events.findLast((event) => event.type === "engagement.transitioned" && event.details?.to === "blocked");
+  return entered?.details?.from ?? null;
+}
+
 export function transitionEngagement(state, target, options = {}, now = new Date().toISOString()) {
   const allowed = transitions.get(state.engagement_phase);
   if (!allowed?.has(target)) throw new TransitionError(`Cannot transition from ${state.engagement_phase} to ${target}`);
+  if (state.engagement_phase === "blocked" && !planningPhases.has(target) && target !== interruptedPhase(state)) {
+    throw new TransitionError(`blocked work resumes only at the interrupted phase (${interruptedPhase(state) ?? "unknown"}) or a planning phase, not ${target}`);
+  }
+  if (["awaiting_plan_approval", "pilot_in_progress", "producing"].includes(target)) requireApproval(state, "brief", options.briefSubject ?? "brief", target);
+  if (target === "ready") assertReadyPieces(state, options);
 
   const planSubjectKey = options.planSubject ?? "plan";
   let planSubject;
@@ -106,10 +118,21 @@ export function transitionEngagement(state, target, options = {}, now = new Date
     event_id: randomUUID(),
     type: "engagement.transitioned",
     recorded_at: now,
-    details: {from: state.engagement_phase, to: target, piece_ids: target === "producing" ? [...options.productionPieceIds] : target === "pilot_in_progress" ? [...options.pilotPieceIds] : []}
+    details: {from: state.engagement_phase, to: target, piece_ids: target === "producing" ? [...options.productionPieceIds] : target === "pilot_in_progress" ? [...options.pilotPieceIds] : target === "ready" ? [...options.readyPieceIds] : []}
   });
   next.updated_at = now;
   return assertValidState(next);
+}
+
+function assertReadyPieces(state, options) {
+  if (!Array.isArray(options.readyPieceIds) || options.readyPieceIds.length === 0) throw new TransitionError("ready requires readyPieceIds naming at least one piece");
+  for (const pieceId of options.readyPieceIds) {
+    const piece = state.pieces.find((candidate) => candidate.piece_id === pieceId);
+    if (!piece) throw new TransitionError(`ready piece ${pieceId} is not persisted`);
+    for (const component of ["render", "qa"]) if (piece.components[component] !== "valid") throw new TransitionError(`ready piece ${pieceId} requires a valid ${component} component`);
+    const style = requireApproval(state, "style", piece.style_subject, `ready piece ${pieceId}`);
+    if (!style.piece_ids.includes(pieceId)) throw new TransitionError(`style subject ${piece.style_subject} does not cover ready piece ${pieceId}`);
+  }
 }
 
 export function invalidatePieces(state, {changeId, changeType, pieceIds}, now = new Date().toISOString()) {

@@ -86,6 +86,11 @@ export function assertValidState(state) {
     const values = state[collection].map((entry) => entry[idKey]);
     if (new Set(values).size !== values.length) throw new StateValidationError([{instancePath: `/${collection}`, message: `must contain unique ${idKey} values`}]);
   }
+  for (const piece of state.pieces) {
+    if (piece.status === "ready" && (piece.components.render !== "valid" || piece.components.qa !== "valid")) {
+      throw new StateValidationError([{instancePath: `/pieces/${piece.piece_id}/status`, message: "a ready piece requires valid render and qa components"}]);
+    }
+  }
   return state;
 }
 

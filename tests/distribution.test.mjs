@@ -16,7 +16,7 @@ const subject = reviewSubject({kind: "plan", scope: "plan-main", document: plan,
 function readyState({approved = true} = {}) {
   let state = createInitialState(plan.project_id);
   const pieceState = createPieceState(piece.piece_id);
-  pieceState.status = "ready";
+  pieceState.status = "ready"; pieceState.components.render = "valid"; pieceState.components.qa = "valid";
   state.pieces.push(pieceState);
   state = setCurrentSubject(state, "plan", subject);
   if (approved) state = addApproval(state, {approval_id: "approval-plan", kind: "plan", scope: subject.scope, confirmed_by: "owner", confirmed_at: "2026-10-11T12:00:00.000Z", subject_version: subject.version, subject_hash: subject.hash, explicit_method: "conversation", status: "approved"});
