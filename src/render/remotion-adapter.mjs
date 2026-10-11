@@ -7,7 +7,7 @@ import {tmpdir} from "node:os";
 import {resolve} from "node:path";
 import {promisify} from "node:util";
 import {createAssetInventory} from "../assets/inventory.mjs";
-import {stableId} from "../core/ids.mjs";
+import {contentHash, stableId} from "../core/ids.mjs";
 import {assertMotionSpecCurrent} from "../agency/motion.mjs";
 import {assertProductionHandoffs} from "../agency/production-flow.mjs";
 
@@ -199,6 +199,7 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
     piece_id: storyboard.piece_id,
     adapter: "remotion",
     engine_version: "4.0.534",
+    storyboard_hash: contentHash(storyboard),
     render_id: stableId("render", {storyboard, brand, assetHashes, assetRecordHashes, evidenceHashes, renderConfig, motionSpec}),
     brand: {brand_id: brand.brand_id, version: brand.version, confirmation_status: brand.confirmation_status, record_hash: brandHash},
     assets: assetHashes,

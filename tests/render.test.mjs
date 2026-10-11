@@ -117,7 +117,7 @@ test("renders a real timed MP4 from an explicit motion specification", {timeout:
   assert.equal(result.artifact.content_type, "video/mp4");
   assert.ok(result.artifact.bytes.length > 1000);
   assert.equal(result.manifest.configuration.motion_spec_id, motionSpec.motion_spec_id);
-  const exported = createExportManifest({pieceId: versionedStoryboard.piece_id, requestedVariants: ["video"], artifacts: [{variant: "video", content_type: "video/mp4", bytes: result.artifact.bytes, probe: {decodable: true, width: 320, height: 180, duration_seconds: 1}}]});
+  const exported = createExportManifest({source: {render_id: result.manifest.render_id, storyboard_hash: result.manifest.storyboard_hash}, pieceId: versionedStoryboard.piece_id, requestedVariants: ["video"], artifacts: [{variant: "video", content_type: "video/mp4", bytes: result.artifact.bytes, probe: {decodable: true, width: 320, height: 180, duration_seconds: 1}}]});
   assert.equal(exported.status, "passed", "a real Remotion MP4 must satisfy the structural container check");
 });
 

@@ -6,6 +6,7 @@ import {reviewSubject} from "../src/agency/review.mjs";
 import {addApproval, createInitialState} from "../src/state/store.mjs";
 import {createPieceState, setCurrentSubject} from "../src/state/transitions.mjs";
 import {createExportManifest, createIndependentQaReport} from "../src/qa/export.mjs";
+const source = {render_id: "render-test", storyboard_hash: `sha256:${"a".repeat(64)}`};
 
 const root = new URL("../fixtures/contracts/field-service/", import.meta.url);
 const plan = JSON.parse(await readFile(new URL("content-plan.json", root)));
@@ -30,9 +31,10 @@ function readyState({approved = true, styled = true} = {}) {
 }
 
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64");
-const manifest = createExportManifest({pieceId: piece.piece_id, requestedVariants: ["clean-master"], artifacts: [{variant: "clean-master", content_type: "image/png", bytes: png}]});
+const manifest = createExportManifest({source, pieceId: piece.piece_id, requestedVariants: ["clean-master"], artifacts: [{variant: "clean-master", content_type: "image/png", bytes: png}]});
 const qa = createIndependentQaReport({manifest, reviewer: "independent-reviewer", reviewedAt: "2026-10-11T15:00:00.000Z", observations: [{kind: "visual", status: "passed", note: "Complete artifact inspected"}], completeMediaInspected: true});
-const candidate = {piece_id: piece.piece_id, public_title: "Complete the field task", description: "A verified workflow.", cta: piece.cta, export_manifest: manifest, qa_report: qa, variants: [{export_variant: "clean-master", public_name: "Landscape master", format: "image/png"}], channels: [{channel: piece.channels[0], placement: "Product education", series: null}]};
+const renderManifest = {render_id: source.render_id, storyboard_hash: source.storyboard_hash, piece_id: piece.piece_id};
+const candidate = {render_manifest: renderManifest, piece_id: piece.piece_id, public_title: "Complete the field task", description: "A verified workflow.", cta: piece.cta, export_manifest: manifest, qa_report: qa, variants: [{export_variant: "clean-master", public_name: "Landscape master", format: "image/png"}], channels: [{channel: piece.channels[0], placement: "Product education", series: null}]};
 
 test("builds proposal-only channel packages with public names and QA-bound exports", () => {
   const result = createDistributionPlan({state: readyState(), plan, audiences, version: 1, packages: [candidate], channelCapabilities: {[piece.channels[0]]: {status: "verified"}}});
@@ -66,4 +68,9 @@ test("binds package piece, passed manifest and declared format", () => {
 
 test("requires a current style approval for every packaged piece", () => {
   assert.throws(() => createDistributionPlan({state: readyState({styled: false}), plan, audiences, version: 1, packages: [candidate], channelCapabilities: {}}), /style approval/);
+});
+
+test("rejects an export that was not produced from the supplied render and storyboard", () => {
+  const stale = {...candidate, render_manifest: {...renderManifest, storyboard_hash: `sha256:${"b".repeat(64)}`}};
+  assert.throws(() => createDistributionPlan({state: readyState(), plan, audiences, version: 1, packages: [stale], channelCapabilities: {}}), /not bound to the render/);
 });

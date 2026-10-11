@@ -93,7 +93,8 @@ function inspectArtifact(artifact) {
   return {variant: artifact.variant, content_type: artifact.content_type, sha256: createHash("sha256").update(artifact.bytes).digest("hex"), bytes: artifact.bytes.length, ...media};
 }
 
-export function createExportManifest({pieceId, requestedVariants, artifacts}) {
+export function createExportManifest({pieceId, source, requestedVariants, artifacts}) {
+  if (typeof source?.render_id !== "string" || !source.render_id || !/^sha256:[a-f0-9]{64}$/.test(source?.storyboard_hash ?? "")) throw new ExportQaError("An export must name the render_id and storyboard_hash it was produced from");
   if (typeof pieceId !== "string" || !pieceId || !Array.isArray(requestedVariants) || requestedVariants.length === 0 || new Set(requestedVariants).size !== requestedVariants.length) throw new ExportQaError("Piece and unique requested variants are required");
   if (!Array.isArray(artifacts)) throw new ExportQaError("artifacts must be an array");
   const checks = [];
@@ -115,8 +116,8 @@ export function createExportManifest({pieceId, requestedVariants, artifacts}) {
     }
   }
   for (const variant of byVariant.keys()) if (!requestedVariants.includes(variant)) checks.push({check: "requested-scope", subject: variant, status: "failed", detail: "Unrequested artifact must not silently enter the package"});
-  const identity = {piece_id: pieceId, requested_variants: requestedVariants, artifacts: inspected};
-  const value = {schema_version: 1, export_manifest_id: stableId("export", identity), piece_id: pieceId, requested_variants: [...requestedVariants], artifacts: inspected, mechanical_checks: checks, status: checks.every(({status}) => status === "passed") ? "passed" : "failed"};
+  const identity = {piece_id: pieceId, source: {render_id: source.render_id, storyboard_hash: source.storyboard_hash}, requested_variants: requestedVariants, artifacts: inspected};
+  const value = {schema_version: 1, export_manifest_id: stableId("export", identity), piece_id: pieceId, source: identity.source, requested_variants: [...requestedVariants], artifacts: inspected, mechanical_checks: checks, status: checks.every(({status}) => status === "passed") ? "passed" : "failed"};
   if (!validateExport(value)) throw new ExportQaError((validateExport.errors ?? []).map(({instancePath, message}) => `${instancePath}: ${message}`).join("; "));
   return value;
 }
@@ -140,7 +141,7 @@ export function createIndependentQaReport({manifest, reviewer, reviewedAt, obser
 
 export function assertExportManifestIntegrity(manifest) {
   if (!validateExport(manifest)) throw new ExportQaError("Export manifest does not satisfy its contract");
-  const expected = stableId("export", {piece_id: manifest.piece_id, requested_variants: manifest.requested_variants, artifacts: manifest.artifacts});
+  const expected = stableId("export", {piece_id: manifest.piece_id, source: manifest.source, requested_variants: manifest.requested_variants, artifacts: manifest.artifacts});
   const artifactVariants = manifest.artifacts.map(({variant}) => variant);
   const complete = artifactVariants.length === manifest.requested_variants.length && new Set(artifactVariants).size === artifactVariants.length && manifest.requested_variants.every((variant) => artifactVariants.includes(variant));
   const passed = complete && manifest.mechanical_checks.length === manifest.requested_variants.length && manifest.mechanical_checks.every(({status, subject}) => status === "passed" && manifest.requested_variants.includes(subject));

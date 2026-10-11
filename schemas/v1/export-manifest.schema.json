@@ -4,11 +4,12 @@
   "title": "Keelokit Studio export manifest",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "export_manifest_id", "piece_id", "requested_variants", "artifacts", "mechanical_checks", "status"],
+  "required": ["schema_version", "export_manifest_id", "piece_id", "source", "requested_variants", "artifacts", "mechanical_checks", "status"],
   "properties": {
     "schema_version": {"const": 1},
     "export_manifest_id": {"type": "string", "minLength": 1},
     "piece_id": {"type": "string", "minLength": 1},
+    "source": {"type": "object", "additionalProperties": false, "required": ["render_id", "storyboard_hash"], "properties": {"render_id": {"type": "string", "minLength": 1}, "storyboard_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}}},
     "requested_variants": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
     "artifacts": {"type": "array", "items": {"type": "object", "required": ["variant", "content_type", "sha256", "bytes"], "properties": {"variant": {"type": "string", "minLength": 1}, "content_type": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "bytes": {"type": "integer", "minimum": 1}}}},
     "mechanical_checks": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["check", "subject", "status", "detail"], "properties": {"check": {"type": "string", "minLength": 1}, "subject": {"type": "string", "minLength": 1}, "status": {"enum": ["passed", "failed"]}, "detail": {"type": "string", "minLength": 1}}}},
