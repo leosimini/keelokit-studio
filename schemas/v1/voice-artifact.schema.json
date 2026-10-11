@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keelokit.com/studio/schemas/v1/voice-artifact.schema.json",
+  "title": "Keelokit Studio voice artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "voice_artifact_id", "piece_id", "scene_id", "text_hash", "configuration_hash", "request_hash", "provider", "model", "voice_id", "options", "status", "provider_job_id", "known_cost", "currency", "duration_seconds", "alignment", "audio", "limitations"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "voice_artifact_id": {"type": "string", "minLength": 1},
+    "piece_id": {"type": "string", "minLength": 1},
+    "scene_id": {"type": "string", "minLength": 1},
+    "text_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "configuration_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "request_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "provider": {"type": "string", "minLength": 1},
+    "model": {"type": "string", "minLength": 1},
+    "voice_id": {"type": "string", "minLength": 1},
+    "options": {"type": "object"},
+    "status": {"enum": ["unavailable", "uncertain", "failed", "succeeded"]},
+    "provider_job_id": {"type": ["string", "null"]},
+    "known_cost": {"type": ["number", "null"], "minimum": 0},
+    "currency": {"type": ["string", "null"]},
+    "duration_seconds": {"type": ["number", "null"], "exclusiveMinimum": 0},
+    "alignment": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["start_seconds", "end_seconds", "text"],
+        "properties": {
+          "start_seconds": {"type": "number", "minimum": 0},
+          "end_seconds": {"type": "number", "exclusiveMinimum": 0},
+          "text": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "audio": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["content_type", "sha256", "bytes"],
+          "properties": {
+            "content_type": {"type": "string", "pattern": "^audio/"},
+            "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+            "bytes": {"type": "integer", "minimum": 1}
+          }
+        }
+      ]
+    },
+    "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keelokit.com/studio/schemas/v1/measurement-report.schema.json",
+  "title": "Keelokit Studio media measurement report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "measurement_id", "piece_id", "artifact_id", "duration_seconds", "audio", "captions", "layouts", "issues", "capabilities", "limits"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "measurement_id": {"type": "string", "minLength": 1},
+    "piece_id": {"type": "string", "minLength": 1},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+    "audio": {"type": "object"},
+    "captions": {"type": "array"},
+    "layouts": {"type": "array"},
+    "issues": {"type": "array", "items": {"type": "object"}},
+    "capabilities": {"type": "object"},
+    "limits": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+  }
+}

@@ -1,6 +1,6 @@
 # C04-02 — Storyboard by intent
 
-Status: pending
+Status: verified
 
 - Requirements: ST-007, ST-010, ST-015
 - Evaluations: EV-002, EV-011, EV-012
@@ -11,3 +11,7 @@ Status: pending
 - Acceptance: each storyboard follows its approved piece intent and references only available evidence/assets; an explainer keeps to one promise, one supported walkthrough and one CTA unless its approved plan justifies otherwise; a tutorial retains required preconditions and steps; no fixed duration or combination of audiences and formats is imposed
 - Verification: validate synthetic explainer and tutorial storyboards, including missing references, unsupported claims and incomplete tutorial steps; confirm valid alternatives with differing durations/formats are accepted
 - Limit: storyboard validation cannot prove that an evidence record is true or that the final rendered sequence communicates clearly
+
+Implemented in `src/agency/storyboard.mjs` with versioned contract additions in `schemas/v1/storyboard.schema.json`; usage and conservative exact-statement authoring are documented in `docs/storyboards.md`. Current plan/audience approval is required, explainer exceptions bind to an explicitly approved requirement, and tutorial preconditions and ordered evidence steps are preserved. Legacy unversioned fixtures remain schema-compatible and are not accepted by the authoring gate.
+
+Verification: `node --test tests/storyboard.test.mjs tests/contracts.test.mjs` (17 passing tests), plus `git diff --check`. Negative cases cover missing/stale/revoked approval, unknown/incompatible evidence and assets, unsupported declared and undeclared claims, incomplete/reordered tutorial steps and omitted preconditions. Positive cases cover explainer/tutorial structures, approved structure exceptions, different durations, aspect ratios and languages.

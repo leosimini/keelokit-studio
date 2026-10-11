@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keelokit.com/studio/schemas/v1/qa-report.schema.json",
+  "title": "Keelokit Studio independent QA report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "qa_report_id", "piece_id", "export_manifest_id", "reviewer", "reviewed_at", "complete_media_inspected", "mechanical_checks", "observations", "evidence_reviewed", "blockers", "limits", "verdict"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "qa_report_id": {"type": "string", "minLength": 1},
+    "piece_id": {"type": "string", "minLength": 1},
+    "export_manifest_id": {"type": "string", "minLength": 1},
+    "reviewer": {"type": "string", "minLength": 1},
+    "reviewed_at": {"type": "string", "minLength": 1},
+    "complete_media_inspected": {"type": "boolean"},
+    "mechanical_checks": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["check", "subject", "status", "detail"], "properties": {"check": {"type": "string", "minLength": 1}, "subject": {"type": "string", "minLength": 1}, "status": {"enum": ["passed", "failed"]}, "detail": {"type": "string", "minLength": 1}}}},
+    "observations": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["kind", "status", "note"], "properties": {"kind": {"enum": ["visual", "auditory"]}, "status": {"enum": ["passed", "failed", "not-run"]}, "note": {"type": "string", "minLength": 1}}}},
+    "evidence_reviewed": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "blockers": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "limits": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "verdict": {"enum": ["pass", "fail", "limited"]}
+  }
+}

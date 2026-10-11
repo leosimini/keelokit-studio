@@ -1,6 +1,6 @@
 # C04-06 — Export, mechanical checks and independent QA
 
-Status: pending
+Status: verified
 
 - Requirements: ST-010, ST-011, ST-015
 - Evaluations: EV-011, EV-012

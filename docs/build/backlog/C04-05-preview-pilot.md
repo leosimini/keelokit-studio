@@ -1,6 +1,6 @@
 # C04-05 — Preview, pilot and style approval gate
 
-Status: pending
+Status: verified
 
 - Requirements: ST-005, ST-006, ST-008, ST-010, ST-015
 - Evaluations: EV-003, EV-011, EV-012

@@ -1,6 +1,6 @@
 # C04-03 — Optional voice adapter
 
-Status: pending
+Status: verified
 
 - Requirements: ST-006, ST-010, ST-014, ST-015
 - Evaluations: EV-010, EV-011

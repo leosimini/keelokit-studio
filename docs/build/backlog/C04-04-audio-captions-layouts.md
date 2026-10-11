@@ -1,6 +1,6 @@
 # C04-04 — Measure audio, captions and layouts
 
-Status: pending
+Status: verified
 
 - Requirements: ST-006, ST-010, ST-011, ST-015
 - Evaluations: EV-011, EV-012
