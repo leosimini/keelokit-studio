@@ -13,12 +13,18 @@ const audiences = JSON.parse(await readFile(new URL("audiences.json", root)));
 const piece = plan.suites[0].pieces[0];
 const subject = reviewSubject({kind: "plan", scope: "plan-main", document: plan, audiences});
 
-function readyState({approved = true} = {}) {
+const styleHash = `sha256:${"9".repeat(64)}`;
+
+function readyState({approved = true, styled = true} = {}) {
   let state = createInitialState(plan.project_id);
   const pieceState = createPieceState(piece.piece_id);
   pieceState.status = "ready"; pieceState.components.render = "valid"; pieceState.components.qa = "valid";
   state.pieces.push(pieceState);
   state = setCurrentSubject(state, "plan", subject);
+  if (styled) {
+    state = setCurrentSubject(state, "style", {kind: "style", scope: "style-main", version: 1, hash: styleHash, piece_ids: [piece.piece_id]});
+    state = addApproval(state, {approval_id: "approval-style", kind: "style", scope: "style-main", confirmed_by: "owner", confirmed_at: "2026-10-11T12:00:00.000Z", subject_version: 1, subject_hash: styleHash, explicit_method: "conversation", status: "approved"});
+  }
   if (approved) state = addApproval(state, {approval_id: "approval-plan", kind: "plan", scope: subject.scope, confirmed_by: "owner", confirmed_at: "2026-10-11T12:00:00.000Z", subject_version: subject.version, subject_hash: subject.hash, explicit_method: "conversation", status: "approved"});
   return state;
 }
@@ -56,4 +62,8 @@ test("binds package piece, passed manifest and declared format", () => {
   assert.throws(() => createDistributionPlan({state: readyState(), plan, audiences, version: 1, packages: [{...candidate, export_manifest: changedManifest}], channelCapabilities: {[piece.channels[0]]: {status: "verified"}}}), /identity/);
   const forgedQa = structuredClone(qa); forgedQa.observations[0].status = "failed"; forgedQa.verdict = "pass";
   assert.throws(() => createDistributionPlan({state: readyState(), plan, audiences, version: 1, packages: [{...candidate, qa_report: forgedQa}], channelCapabilities: {[piece.channels[0]]: {status: "verified"}}}), /contract-valid/);
+});
+
+test("requires a current style approval for every packaged piece", () => {
+  assert.throws(() => createDistributionPlan({state: readyState({styled: false}), plan, audiences, version: 1, packages: [candidate], channelCapabilities: {}}), /style approval/);
 });
