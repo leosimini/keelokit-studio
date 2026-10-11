@@ -14,3 +14,6 @@ Explain why this audience would attend to the selected hook and how the visible 
 Validate through the contract before calling the handoff current. Missing inputs or validation failures are explicit blockers. A valid author handoff is not a critic pass, style approval or performance forecast. Do not generate an editorial verdict on your own work.
 
 Persist the validated treatment with `createAgencyHandoff` from `creative-director` to `storyboard-director`, binding the exact strategy artifact as input. A prose response alone is not a production handoff.
+
+
+For a multilingual brief, write each language natively for its own audience instead of translating the primary version. Each variant needs its own hooks, claims backed by evidence captured in that language, and its own treatment revision; see `${CLAUDE_PLUGIN_ROOT}/docs/localization.md`.

@@ -5,7 +5,7 @@ import {access, mkdtemp, rm, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {resolve} from "node:path";
 import {chromiumExecutable} from "./support/chromium.mjs";
-import {prepareRemotionRender, remotionRenderCapability, renderRemotionPreview, renderRemotionSceneStills, renderRemotionVideo, RenderAdapterError} from "../src/render/remotion-adapter.mjs";
+import {prepareRemotionRender, remotionRenderCapability, renderRemotionPreview, renderRemotionLocalizedVideos, renderRemotionSceneStills, renderRemotionVideo, RenderAdapterError} from "../src/render/remotion-adapter.mjs";
 import {createMotionSpec} from "../src/agency/motion.mjs";
 import {createAgencyHandoff} from "../src/agency/handoff.mjs";
 import {createAssetRequirements, fulfillAssetRequirement} from "../src/assets/requirements.mjs";
@@ -100,25 +100,51 @@ test("renders a real in-memory PNG preview without claiming QA", {timeout: 12000
   assert.equal(result.manifest.qa_status, "not-reviewed");
 });
 
-test("renders a real timed MP4 from an explicit motion specification", {timeout: 120000}, async (context) => {
-  const capability = await remotionRenderCapability({browserExecutable: chromiumExecutable});
-  if (capability.status !== "available") return context.skip(capability.reason);
+function videoCase(language = "en-US") {
+  const english = language === "en-US";
+  const suffix = english ? "" : `-${language}`;
+  const copy = english ? {claim: "Operators can complete the task.", narration: "Complete the verified task.", text: "Complete the task"} : {claim: "Los operadores pueden completar la tarea.", narration: "Completá la tarea verificada.", text: "Completá la tarea"};
+  const localAsset = {...asset, asset_id: `asset-surface${suffix}`, path: `media/studio/assets/surface${suffix}.png`, origin: {...asset.origin, source: `media/studio/assets/surface${suffix}.png`}, depends_on: [{type: "evidence", id: `evidence-task${suffix}`, sha256: null}], evidence_id: `evidence-task${suffix}`};
+  const localAssets = {...assets, assets: [localAsset]};
+  const localEvidence = {...evidence, evidence: [{...evidence.evidence[0], evidence_id: `evidence-task${suffix}`, locale: language, capture_paths: [localAsset.path], allowed_claims: [copy.claim]}]};
   const treatmentHash = `sha256:${"2".repeat(64)}`;
-  const versionedStoryboard = {...storyboard, storyboard_id: "storyboard-preview", version: 1, plan_id: "plan-preview", plan_version: 1, plan_hash: `sha256:${"d".repeat(64)}`, plan_scope: "plan-main", intent_type: "explainer", message: "Operators can complete the task.", language: "en-US", structure: ["promise"], evidence_ids: ["evidence-task"], preconditions: [], steps: [], structure_justification: "Single-scene render adapter test", treatment_hash: treatmentHash, narrative_copy: [], evidence_target: {feature_or_journey: "Complete task", surface: "web", role: "operator", build: "fixture-1", commit: null, locale: "en-US", flags: [], availability: "available"}, scenes: [{...storyboard.scenes[0], section: "promise", step: null, claims: [{claim: "Operators can complete the task.", evidence_id: "evidence-task"}]}]};
+  const versionedStoryboard = {...storyboard, storyboard_id: `storyboard-preview${suffix}`, piece_id: `piece-preview${suffix}`, version: 1, plan_id: "plan-preview", plan_version: 1, plan_hash: `sha256:${"d".repeat(64)}`, plan_scope: "plan-main", intent_type: "explainer", message: copy.claim, language, structure: ["promise"], evidence_ids: [`evidence-task${suffix}`], preconditions: [], steps: [], structure_justification: "Single-scene render adapter test", treatment_hash: treatmentHash, narrative_copy: [], evidence_target: {feature_or_journey: "Complete task", surface: "web", role: "operator", build: "fixture-1", commit: null, locale: language, flags: [], availability: "available"}, scenes: [{...storyboard.scenes[0], narration: copy.narration, on_screen_text: copy.text, asset_ids: [localAsset.asset_id], evidence_ids: [`evidence-task${suffix}`], section: "promise", step: null, claims: [{claim: copy.claim, evidence_id: `evidence-task${suffix}`}]}]};
   const motionSpec = createMotionSpec({storyboard: versionedStoryboard, version: 1, rationale: "Use restrained motion to reveal the verified task", scenes: [{scene_id: "scene-task", entrance: "fade", entrance_frames: 5, emphasis: "focus", exit: "fade", exit_frames: 1, focus: "task result", purpose: "Reveal and then clear the verified result"}]});
-  let requirements = createAssetRequirements({storyboard: versionedStoryboard, evidence, requirements: [{scene_id: "scene-task", purpose: "Show the verified task result", evidence_id: "evidence-task", evidence_hash: contentHash(evidence.evidence[0]), build: "fixture-1", role: "operator", locale: "en-US", state: "task complete", action: "Complete it", result: "The task is complete.", media_kind: "capture", dimensions: null, aspect_ratio: null, crop: "full verified surface", focus: "completed task", duration_seconds: null, rights: null, approval: {status: "pending", review_id: null}, acceptance_criteria: ["The completed task is legible"]}]});
-  requirements = fulfillAssetRequirement(requirements, {requirementId: requirements.requirements[0].requirement_id, assetId: asset.asset_id, assetSha256: asset.sha256, storyboard: versionedStoryboard, assets, evidence});
+  let requirements = createAssetRequirements({storyboard: versionedStoryboard, evidence: localEvidence, requirements: [{scene_id: "scene-task", purpose: "Show the verified task result", evidence_id: `evidence-task${suffix}`, evidence_hash: contentHash(localEvidence.evidence[0]), build: "fixture-1", role: "operator", locale: language, state: "task complete", action: "Complete it", result: "The task is complete.", media_kind: "capture", dimensions: null, aspect_ratio: null, crop: "full verified surface", focus: "completed task", duration_seconds: null, rights: null, approval: {status: "pending", review_id: null}, acceptance_criteria: ["The completed task is legible"]}]});
+  requirements = fulfillAssetRequirement(requirements, {requirementId: requirements.requirements[0].requirement_id, assetId: localAsset.asset_id, assetSha256: localAsset.sha256, storyboard: versionedStoryboard, assets: localAssets, evidence: localEvidence});
   const strategy = {strategy_id: "strategy-render", version: 1, content_hash: `sha256:${"1".repeat(64)}`, candidates: [{candidate_id: "candidate-render", channel: "help-center"}]};
   const treatment = {treatment_id: "treatment-render", version: 1, content_hash: treatmentHash, source_strategy: {candidate_id: "candidate-render"}};
   const artifact = {strategy: {kind: "content-strategy", id: strategy.strategy_id, version: 1, hash: strategy.content_hash}, treatment: {kind: "creative-treatment", id: treatment.treatment_id, version: 1, hash: treatment.content_hash}, storyboard: {kind: "storyboard", id: versionedStoryboard.storyboard_id, version: 1, hash: contentHash(versionedStoryboard)}, motion: {kind: "motion-spec", id: motionSpec.motion_spec_id, version: 1, hash: motionSpec.content_hash}, requirements: {kind: "asset-requirements", id: `asset-requirements-${versionedStoryboard.storyboard_id}`, version: 1, hash: contentHash(requirements)}};
   const handoff = (fromRole, inputs, output, runId) => createAgencyHandoff({projectId: versionedStoryboard.project_id, fromRole, toRole: "editorial-critic", producer: `${fromRole}-agent`, runId, inputs, output, status: "ready", recordedAt: "2026-10-11T12:00:00.000Z"});
   const productionFlow = {strategy, treatment, assetRequirements: requirements, creativeHandoff: createAgencyHandoff({projectId: versionedStoryboard.project_id, fromRole: "creative-director", toRole: "storyboard-director", producer: "creative-agent", runId: "creative-1", inputs: [artifact.strategy], output: artifact.treatment, status: "ready", recordedAt: "2026-10-11T12:00:00.000Z"}), motionHandoff: handoff("motion-director", [artifact.treatment, artifact.storyboard], artifact.motion, "motion-1"), assetHandoff: handoff("asset-producer", [artifact.treatment, artifact.storyboard], artifact.requirements, "assets-1")};
-  const result = await renderRemotionVideo({...input({storyboard: versionedStoryboard}), motionSpec, productionFlow, browserExecutable: chromiumExecutable});
+  return {language, storyboard: versionedStoryboard, assets: localAssets, evidence: localEvidence, assetSources: {[localAsset.asset_id]: assetSource}, motionSpec, productionFlow, brand, renderConfig};
+}
+
+test("renders a real timed MP4 from an explicit motion specification", {timeout: 120000}, async (context) => {
+  const capability = await remotionRenderCapability({browserExecutable: chromiumExecutable});
+  if (capability.status !== "available") return context.skip(capability.reason);
+  const options = videoCase("en-US");
+  const result = await renderRemotionVideo({...options, browserExecutable: chromiumExecutable});
   assert.equal(result.artifact.content_type, "video/mp4");
   assert.ok(result.artifact.bytes.length > 1000);
-  assert.equal(result.manifest.configuration.motion_spec_id, motionSpec.motion_spec_id);
-  const exported = createExportManifest({source: {render_id: result.manifest.render_id, storyboard_hash: result.manifest.storyboard_hash}, pieceId: versionedStoryboard.piece_id, requestedVariants: ["video"], artifacts: [{variant: "video", content_type: "video/mp4", bytes: result.artifact.bytes, probe: {decodable: true, width: 320, height: 180, duration_seconds: 1}}]});
+  assert.equal(result.manifest.configuration.motion_spec_id, options.motionSpec.motion_spec_id);
+  const exported = createExportManifest({source: {render_id: result.manifest.render_id, storyboard_hash: result.manifest.storyboard_hash}, pieceId: options.storyboard.piece_id, requestedVariants: ["video"], artifacts: [{variant: "video", content_type: "video/mp4", bytes: result.artifact.bytes, probe: {decodable: true, width: 320, height: 180, duration_seconds: 1}}]});
   assert.equal(exported.status, "passed", "a real Remotion MP4 must satisfy the structural container check");
+});
+
+test("renders every language of a localized group from one bundle, each with its own evidence and copy", {timeout: 240000}, async (context) => {
+  const capability = await remotionRenderCapability({browserExecutable: chromiumExecutable});
+  if (capability.status !== "available") return context.skip(capability.reason);
+  const english = videoCase("en-US");
+  const spanish = videoCase("es-AR");
+  const result = await renderRemotionLocalizedVideos({variants: [english, spanish], browserExecutable: chromiumExecutable});
+  assert.deepEqual(result.variants.map(({language}) => language), ["en-US", "es-AR"]);
+  assert.notEqual(result.variants[0].artifact.sha256, result.variants[1].artifact.sha256);
+  assert.notEqual(result.variants[0].manifest.render_id, result.variants[1].manifest.render_id);
+  for (const variant of result.variants) assert.equal(variant.artifact.content_type, "video/mp4");
+  await assert.rejects(() => renderRemotionLocalizedVideos({variants: [english, {...spanish, language: "en-US"}], browserExecutable: chromiumExecutable}), /distinct languages|does not match/);
+  await assert.rejects(() => renderRemotionLocalizedVideos({variants: [english, {...spanish, renderConfig: {...renderConfig, width: 640}}], browserExecutable: chromiumExecutable}), /same composition/);
+  await assert.rejects(() => renderRemotionLocalizedVideos({variants: [english], browserExecutable: chromiumExecutable}), /at least two/);
 });
 
 test("requires a contiguous timeline, rejects unapproved assets and assets the chosen component would ignore", () => {

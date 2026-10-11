@@ -213,23 +213,58 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
   return {inputProps, manifest};
 }
 
-export async function renderRemotionVideo(options) {
+function assertVideoRequirements(options) {
   if (!options.motionSpec) throw new RenderAdapterError("Timed video export requires an exact motion specification", "motion_required");
   if (!options.productionFlow) throw new RenderAdapterError("Timed video export requires current specialist handoffs and fulfilled asset requirements", "production_handoff_required");
   assertProductionHandoffs({...options.productionFlow, storyboard: options.storyboard, motionSpec: options.motionSpec, assets: options.assets, evidence: options.evidence, projectId: options.storyboard.project_id});
-  const capability = await remotionRenderCapability({browserExecutable: options.browserExecutable});
+}
+
+async function assertRenderCapability(browserExecutable) {
+  const capability = await remotionRenderCapability({browserExecutable});
   if (capability.status !== "available") throw new RenderAdapterError(capability.reason, "render_capability_unavailable");
-  const prepared = prepareRemotionRender(options);
-  const bundleDirectory = await mkdtemp(resolve(tmpdir(), "keelokit-studio-video-"));
-  const output = resolve(bundleDirectory, "piece.mp4");
+}
+
+async function renderVideoFiles(entries, browserExecutable) {
+  const directory = await mkdtemp(resolve(tmpdir(), "keelokit-studio-video-"));
   try {
     const [{bundle}, {renderMedia, selectComposition}] = await Promise.all([import("@remotion/bundler"), import("@remotion/renderer")]);
-    const serveUrl = await bundle({entryPoint: resolve(import.meta.dirname, "entry.mjs"), outDir: resolve(bundleDirectory, "bundle"), enableCaching: false, logLevel: "error"});
-    const composition = await selectComposition({serveUrl, id: "KeelokitStudioPiece", inputProps: prepared.inputProps, browserExecutable: options.browserExecutable, logLevel: "error"});
-    await renderMedia({serveUrl, composition, inputProps: prepared.inputProps, browserExecutable: options.browserExecutable, codec: "h264", outputLocation: output, logLevel: "error"});
-    const bytes = await readFile(output);
-    return {...prepared, artifact: {kind: "video", content_type: "video/mp4", bytes, sha256: createHash("sha256").update(bytes).digest("hex"), duration_seconds: options.storyboard.duration_seconds}};
-  } finally { await rm(bundleDirectory, {recursive: true, force: true}); }
+    const serveUrl = await bundle({entryPoint: resolve(import.meta.dirname, "entry.mjs"), outDir: resolve(directory, "bundle"), enableCaching: false, logLevel: "error"});
+    const results = [];
+    for (const [index, {prepared, options}] of entries.entries()) {
+      const output = resolve(directory, `piece-${index}.mp4`);
+      const composition = await selectComposition({serveUrl, id: "KeelokitStudioPiece", inputProps: prepared.inputProps, browserExecutable, logLevel: "error"});
+      await renderMedia({serveUrl, composition, inputProps: prepared.inputProps, browserExecutable, codec: "h264", outputLocation: output, logLevel: "error"});
+      const bytes = await readFile(output);
+      results.push({...prepared, artifact: {kind: "video", content_type: "video/mp4", bytes, sha256: createHash("sha256").update(bytes).digest("hex"), duration_seconds: options.storyboard.duration_seconds}});
+    }
+    return results;
+  } finally { await rm(directory, {recursive: true, force: true}); }
+}
+
+export async function renderRemotionVideo(options) {
+  assertVideoRequirements(options);
+  await assertRenderCapability(options.browserExecutable);
+  const prepared = prepareRemotionRender(options);
+  return (await renderVideoFiles([{prepared, options}], options.browserExecutable))[0];
+}
+
+// Renders each language of a localized group with the same composition, theme and size, from one bundle.
+// Every variant is validated against its own storyboard, evidence and handoffs before any frame is rendered.
+export async function renderRemotionLocalizedVideos({variants, browserExecutable}) {
+  if (!Array.isArray(variants) || variants.length < 2) throw new RenderAdapterError("A localized render needs at least two language variants", "localization_invalid");
+  const languages = variants.map(({language}) => language);
+  if (languages.some((language) => typeof language !== "string" || language.length === 0) || new Set(languages).size !== languages.length) throw new RenderAdapterError("Localized variants need distinct languages", "localization_invalid");
+  for (const variant of variants) if (variant.storyboard?.language !== variant.language) throw new RenderAdapterError(`Variant ${variant.language} does not match its storyboard language ${variant.storyboard?.language}`, "localization_invalid");
+  const composition = (variant) => JSON.stringify({width: variant.renderConfig.width, height: variant.renderConfig.height, fps: variant.storyboard.fps, theme: variant.renderConfig.theme});
+  if (variants.some((variant) => composition(variant) !== composition(variants[0]))) throw new RenderAdapterError("Localized variants must share the same composition: size, frame rate and theme", "localization_invalid");
+  await assertRenderCapability(browserExecutable);
+  const entries = variants.map((variant) => {
+    const options = {...variant, browserExecutable};
+    assertVideoRequirements(options);
+    return {prepared: prepareRemotionRender(options), options};
+  });
+  const results = await renderVideoFiles(entries, browserExecutable);
+  return {variants: results.map((result, index) => ({language: variants[index].language, ...result}))};
 }
 
 async function renderStillFrames(options, frameFor) {
