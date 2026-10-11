@@ -79,3 +79,14 @@ test("empty risks, claims and gaps remain explicit rather than inferred", () => 
   const args = input(); args.treatment.risks = []; args.treatment.claims = []; args.treatment.unresolved_gaps = [];
   assert.deepEqual(createCreativeTreatment(args).evidence_bindings, []);
 });
+
+test("rejects a selected hook that launders an unsupported figure or absolute", () => {
+  for (const text of ["Guaranteed 10x revenue, zero risk", "Cut errors by 50%", "The only dispatch tool you need"]) {
+    const args = input();
+    args.treatment.hooks[0].text = text;
+    assert.throws(() => createCreativeTreatment(args), /unsupported figure or absolute/);
+  }
+  const args = input();
+  args.treatment.hooks[0].text = "Assign urgent work from one board.";
+  assert.ok(createCreativeTreatment(args));
+});

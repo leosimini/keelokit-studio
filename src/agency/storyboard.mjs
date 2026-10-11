@@ -117,6 +117,7 @@ export function validateStoryboard(storyboard, context) {
     }
     for (const id of scene.asset_ids) checkAsset(id);
   }
+  for (const hook of narrativeCopy) if (![storyboard.scenes[0]?.narration, storyboard.scenes[0]?.on_screen_text].includes(hook)) errors.push("The selected hook must open the piece: it must appear in the first scene");
   if (end !== storyboard.duration_seconds) errors.push("Scenes must cover storyboard duration");
   if (errors.length) throw new StoryboardValidationError(errors);
   return storyboard;

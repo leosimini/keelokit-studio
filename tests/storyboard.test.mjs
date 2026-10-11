@@ -84,6 +84,14 @@ test("allows only the selected current treatment hook as narrative copy", () => 
   assert.throws(() => validateStoryboard(changed, context), /Narrative copy/);
 });
 
+test("requires the selected hook to open the piece", () => {
+  const {context, input} = setup("explainer", {treatment: true});
+  const storyboard = createStoryboard(input);
+  const unused = structuredClone(storyboard);
+  for (const scene of unused.scenes) for (const field of ["narration", "on_screen_text"]) if (scene[field] === storyboard.narrative_copy[0]) scene[field] = storyboard.message;
+  assert.throws(() => validateStoryboard(unused, context), /must open the piece/);
+});
+
 test("accepts approved alternatives without a fixed duration or format", () => {
   for (const options of [{duration: 12, formats: ["9:16"], language: "es-AR"}, {duration: 90, formats: ["16:9", "1:1"], language: "en-US"}]) {
     const {input} = setup("explainer", options);

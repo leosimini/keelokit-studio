@@ -75,6 +75,9 @@ function validateIntent(intent, {piece, candidate}, evidence) {
       used.add(id);
     }
   }
+  const selectedHook = intent.hooks.find(({selected}) => selected).text;
+  const absolute = /\d|%|guarantee|zero\b|never\b|always\b|\bbest\b|\bonly\b|#1|instantly|risk-free|no risk/i;
+  requireValue(intent.claims.some(({claim}) => claim === selectedHook) || !absolute.test(selectedHook), "The selected hook states an unsupported figure or absolute; use an evidence-backed claim verbatim or neutral framing");
   return [...used].sort().map((id) => ({evidence_id: id, hash: contentHash(records.get(id))}));
 }
 
