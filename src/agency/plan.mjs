@@ -71,6 +71,38 @@ function effectivePlanCycleErrors(suites) {
   return cycleErrors(nodes, "id", "dependencies", "Plan");
 }
 
+const sameList = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+
+// Localized pieces are ordinary pieces that share a localization_group; a multilingual brief needs every piece in a complete group or an explicit exception.
+function localizationErrors(suites, briefLanguages) {
+  const errors = [];
+  const pieces = suites.flatMap((suite) => suite.pieces);
+  const groups = Map.groupBy(pieces.filter(({localization_group}) => localization_group), ({localization_group}) => localization_group);
+  for (const [group, members] of groups) {
+    const languages = members.map(({language}) => language);
+    if (new Set(languages).size !== languages.length) errors.push(`content-plan.json: localization group ${group} repeats a language`);
+    const [first] = members;
+    for (const member of members) if (member.audience_id !== first.audience_id || !sameList(member.structure, first.structure) || !sameList(member.formats, first.formats) || !sameList(member.channels, first.channels)) errors.push(`content-plan.json: localization group ${group} must keep the same audience, structure, formats and channels in every language`);
+    const missing = briefLanguages.filter((language) => !languages.includes(language));
+    if (missing.length > 0) errors.push(`content-plan.json: localization group ${group} is missing ${missing.join(", ")}`);
+  }
+  if (briefLanguages.length > 1) {
+    for (const piece of pieces) if (!piece.localization_group && !piece.requirements.some((requirement) => requirement.startsWith("Localization exception: "))) errors.push(`content-plan.json: piece ${piece.piece_id} is not localized into ${briefLanguages.join(", ")}; localize it or add a "Localization exception: <reason>" requirement`);
+  }
+  return errors;
+}
+
+// Expands base pieces into one variant per language. `localizations` maps each language to per-piece overrides (message, intention, cta, evidence_ids, evidence_requirements); dependencies follow the same language.
+export function localizePieces(pieces, localizations) {
+  if (!Array.isArray(pieces) || pieces.length === 0 || !localizations || typeof localizations !== "object") throw new TypeError("pieces and localizations are required");
+  const keys = new Set(pieces.map(({key}) => key));
+  return Object.entries(localizations).flatMap(([language, overrides]) => pieces.map((piece) => {
+    const override = overrides[piece.key] ?? {};
+    for (const name of Object.keys(override)) if (!["message", "intention", "cta", "evidence_ids", "evidence_requirements"].includes(name)) throw new TypeError(`Unsupported localization override ${name}`);
+    return {...structuredClone(piece), ...structuredClone(override), key: `${piece.key}.${language}`, language, localization_group: piece.key, dependencies: piece.dependencies.map((dependency) => keys.has(dependency) ? `${dependency}.${language}` : dependency)};
+  }));
+}
+
 export function createContentPlan({projectId, version, brief, audiences, knownEvidenceIds, suiteCandidates, pending, outOfScope}) {
   const inputErrors = [...schemaErrors(validateBrief, brief, "brief.json"), ...schemaErrors(validateAudiences, audiences, "audiences.json")];
   if (inputErrors.length > 0) throw new PlanValidationError(inputErrors);
@@ -109,6 +141,7 @@ export function createContentPlan({projectId, version, brief, audiences, knownEv
       duration_seconds: piece.duration_seconds,
       formats: [...piece.formats],
       language: piece.language,
+      ...(piece.localization_group ? {localization_group: stableId("localization", {projectId, key: piece.localization_group})} : {}),
       channels: [...piece.channels],
       order: piece.order,
       dependencies: piece.dependencies.map((key) => {
@@ -131,6 +164,7 @@ export function createContentPlan({projectId, version, brief, audiences, knownEv
   const audienceById = new Map(audiences.audiences.map((audience) => [audience.audience_id, audience]));
   const treatedAudienceIds = new Set(brief.audience_treatments.map(({audience_id}) => audience_id));
   const evidenceIds = new Set(knownEvidenceIds);
+  const briefLanguages = [brief.languages.primary, ...brief.languages.additional];
   const priorities = suites.map(({priority}) => priority);
   if (new Set(priorities).size !== priorities.length) errors.push("content-plan.json: suite priorities must be unique");
   for (const suite of suites) {
@@ -141,7 +175,8 @@ export function createContentPlan({projectId, version, brief, audiences, knownEv
       if (!audience) errors.push(`content-plan.json: unknown audience ${piece.audience_id}`);
       else if (audience.confirmation_status === "rejected") errors.push(`content-plan.json: rejected audience ${piece.audience_id}`);
       if (!treatedAudienceIds.has(piece.audience_id)) errors.push(`content-plan.json: audience ${piece.audience_id} is outside the brief`);
-      const supportedMessage = brief.messages.some((message) => message.text === piece.message && message.audience_ids.includes(piece.audience_id));
+      if (!briefLanguages.includes(piece.language)) errors.push(`content-plan.json: language ${piece.language} is outside the brief (${briefLanguages.join(", ")})`);
+      const supportedMessage = brief.messages.some((message) => message.text === piece.message && message.language === piece.language && message.audience_ids.includes(piece.audience_id));
       if (!supportedMessage) errors.push(`content-plan.json: unsupported message for audience ${piece.audience_id}`);
       for (const channel of piece.channels) if (!brief.channels.includes(channel)) errors.push(`content-plan.json: channel ${channel} is outside the brief`);
       for (const evidenceId of piece.evidence_ids) if (!evidenceIds.has(evidenceId)) errors.push(`content-plan.json: unknown evidence ${evidenceId}`);
@@ -149,6 +184,7 @@ export function createContentPlan({projectId, version, brief, audiences, knownEv
     const suiteKnownCost = suite.pieces.reduce((sum, piece) => sum + (piece.estimated_cost ?? 0), 0);
     if (suite.budget !== null && suiteKnownCost > suite.budget) errors.push(`content-plan.json: known cost ${suiteKnownCost} exceeds suite budget ${suite.budget}`);
   }
+  errors.push(...localizationErrors(suites, briefLanguages));
   if (!suites.some(({objective}) => objective === brief.objective)) errors.push(`content-plan.json: no suite serves brief objective ${brief.objective}`);
   errors.push(...cycleErrors(suites, "suite_id", "dependencies", "Suite"));
   errors.push(...cycleErrors(suites.flatMap(({pieces}) => pieces), "piece_id", "dependencies", "Piece"));

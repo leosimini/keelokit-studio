@@ -43,6 +43,7 @@
                 "duration_seconds": {"type": ["number", "null"], "exclusiveMinimum": 0},
                 "formats": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1},
                 "language": {"type": "string", "minLength": 1},
+                "localization_group": {"type": ["string", "null"], "minLength": 1},
                 "channels": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1},
                 "order": {"type": "integer", "minimum": 1},
                 "dependencies": {"type": "array", "items": {"type": "string", "minLength": 1}},
