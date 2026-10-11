@@ -1,55 +1,107 @@
 # Keelokit Studio
 
-**Un plugin de Claude Code que convierte el repositorio de un producto en un estudio de marketing auditable.**
+**Convertí un producto terminado en explainers, demos, tutoriales y guías, directamente desde su propio repositorio.**
 
 *[keelokit.com](https://keelokit.com) · [Read in English](README.md)*
 
-Construyo productos con agentes de código, y lo que siempre dejaba para el final era explicarlos:
-el video que muestra el producto funcionando, el tutorial, la guía, el post. Cuando dejaba que un
-agente lo escribiera, sonaba bien y afirmaba cosas que nadie había comprobado. Studio es cómo lo
-resuelvo yo: mis reglas, mi forma de trabajar, compartidas por si le sirven a alguien que
-publica software y además tiene que contarlo. Lo mantengo como hobby, junto a
-[Keelokit](https://github.com/leosimini/keelokit), y es el segundo plugin de lo que espero que
-sea una pequeña suite de plugins Keelokit, cada uno sobre un tema distinto.
+Construiste algo y funciona. Ahora necesitás que la gente lo entienda: un video corto que muestre
+qué hace, un recorrido para usuarios nuevos, una guía para el centro de ayuda, algunos posts.
+Ese trabajo suele quedar para el final, y cuando se lo dejás a una IA tiende a sonar muy bien
+mientras afirma cosas que nadie comprobó.
 
-Es opinionado y joven. Quedate con lo que te sirva.
+Keelokit Studio es un plugin de Claude Code que hace ese trabajo desde adentro de tu proyecto.
+Lee tu repositorio y tu documentación, te pregunta solo lo que no puede averiguar, y después
+trabaja como una pequeña agencia de marketing: decide qué vale la pena hacer y en qué orden,
+escribe guiones completos escena por escena, especifica las capturas o grabaciones exactas que
+necesita cada escena, y genera previews y video. Cada afirmación de un guion tiene que apuntar a
+algo real de tu producto, y nada sale sin que lo hayas revisado vos.
 
-## La idea
+Construyo con agentes de código y mantengo esto como hobby, junto a
+[Keelokit](https://github.com/leosimini/keelokit), el harness que uso para construir los
+productos. Studio es su hermano: Keelokit te ayuda a construir la cosa, Studio te ayuda a
+explicarla. Es opinionado y joven; quedate con lo que te sirva.
 
-Sigue el mismo principio que Keelokit: una regla importante tiene que apuntar a algo que la
-compruebe.
+## Qué podés producir
 
-- Cada paso produce un archivo tipado guardado en tu proyecto, un script lo valida y otro agente
-  lo revisa antes del paso siguiente: **especialista → artefacto guardado → chequeo mecánico →
-  revisión independiente → siguiente especialista.**
-- Quien escribe una pieza nunca la aprueba. Una estratega con citas, una dirección creativa,
-  una dirección de motion, un productor de assets y un crítico editorial adversarial tienen un
-  solo trabajo cada uno.
-- Lo que nadie sabe queda como vacío escrito, no como invento. Una afirmación en un video necesita
-  evidencia del producto; si falta, la escena queda bloqueada.
-- "Renderizado" no es "verificado", y "listo" no es "publicado". Las aprobaciones quedan atadas a
-  la versión y al hash exactos, y un cambio invalida solo lo que depende de él.
-- Studio prepara paquetes de publicación y registra, a mano, dónde publicaste. Nunca publica nada.
+- **Explainers y videos demo de producto.** Una promesa, un recorrido por el producto real y un
+  llamado a la acción, con guion escena por escena: narración, texto en pantalla y tiempos.
+- **Tutoriales.** Videos paso a paso que respetan los requisitos previos y el orden en que el
+  producto realmente funciona.
+- **Guías escritas.** Guías tipo centro de ayuda, construidas con el mismo material verificado
+  que los videos, para que nunca se contradigan.
+- **Cortes para redes.** Adaptaciones cortas de la misma historia para cada canal y formato.
+- **Material de producción que una persona puede usar.** Guiones en Markdown, la lista exacta de
+  capturas y grabaciones que necesita cada escena, subtítulos en WebVTT y SRT, previews PNG, un
+  render MP4 y paquetes por canal listos para que publiques a mano.
+- **Un plan, no solo una pila de archivos.** Una lista priorizada de qué producir y qué publicar
+  primero, con las razones y las fuentes detrás de cada decisión.
 
-## Qué hace
+## Cómo funciona
 
-Corré `/keelokit-studio:start` en el proyecto que querés explicar. Lee el repo, pregunta solo lo
-que falta y recorre: descubrimiento, entrevista, audiencias y brief, estrategia y plan
-(explainers, tutoriales, guías y cortes sociales, rankeados con evidencia citada), tratamiento
-creativo con ganchos en competencia, guiones completos escena por escena, requisitos exactos de
-assets y motion, revisión adversarial, render PNG/MP4 con Remotion, QA, paquetes de distribución
-(solo propuestas), cola "qué publicar primero" y un dashboard local con historial.
+Abrís Claude Code en el repositorio que querés explicar y corrés `/keelokit-studio:start`. A
+partir de ahí Studio sigue la misma secuencia que una buena agencia:
 
-Todo lo que escribe queda en **tu** proyecto, en `.keelokit/studio/` y `media/studio/`.
-Nada se escribe dentro del plugin.
+1. **Entender el producto.** Lee tu README, docs, manuales y material de marca, y te dice qué
+   falta o está desactualizado. Pregunta solo por los vacíos y nunca te pide pegar un secreto:
+   si algo necesita una credencial, pide el nombre de la variable de entorno.
+2. **Definir para quién es y qué decir.** Define audiencias, mensaje y tono, y registra lo que
+   decidiste.
+3. **Planificar y priorizar.** Una estratega propone un conjunto de piezas, las ordena y explica
+   por qué, citando tu propio material. Trata las "recetas" de marketing como hipótesis con
+   fuentes, nunca como promesas de resultados.
+4. **Crear.** Una dirección creativa propone varios ganchos y elige uno. Los guiones se escriben
+   escena por escena. Una dirección de motion decide cómo se mueve cada escena y por qué, y un
+   productor de assets lista qué prueba necesita cada escena y avisa lo que todavía no existe en
+   lugar de inventarlo.
+5. **Revisar como adversario.** Un crítico editorial independiente lee el guion y el preview y
+   puede decir "cambios requeridos". Quien escribió lo corrige y se revisa de nuevo.
+6. **Renderizar y verificar.** Se generan previews y video, se comprueban las exportaciones y un
+   control de calidad independiente mira el resultado.
+7. **Preparar, nunca publicar.** Studio arma paquetes por canal y una cola de "publicá esto
+   primero", y mantiene un dashboard local con avance e historial. Publicás vos y le contás
+   dónde.
 
-## Probalo
+El trabajo lo hacen cinco agentes especialistas: estratega de contenido, dirección creativa,
+dirección de motion, productor de assets y crítico editorial. Quien escribe una pieza nunca la
+aprueba.
 
-Necesitás Node 22.16 o superior y Claude Code. Para renderizar, un Chromium que le indiques
-(build headless-shell o Chrome for Testing). Studio nunca descarga un navegador por su cuenta.
+## Por qué podés confiar en el resultado
 
-**Desde el zip** (cualquier plataforma; solo lleva fuentes, como el de Keelokit). Descargá
-[`keelokit-studio-plugin.zip`](https://github.com/leosimini/keelokit-studio/raw/main/releases/keelokit-studio-plugin.zip) y:
+Es la misma idea de Keelokit: una regla importante tiene que apuntar a algo que la compruebe, no
+solo a un prompt.
+
+- Cada paso produce un archivo estructurado guardado en tu proyecto, y un script lo valida antes
+  del paso siguiente.
+- Una afirmación en un video tiene que estar respaldada por evidencia capturada de tu producto.
+  Si falta la evidencia, la escena queda bloqueada en lugar de rellenarse con una suposición.
+- Tus aprobaciones quedan atadas a la versión exacta de lo que aprobaste. Si algo cambia, solo se
+  reabre el trabajo que dependía de eso.
+- "Renderizado" no significa "verificado", y "listo" no significa "publicado". Studio nunca
+  publica nada por su cuenta.
+
+## Con qué se integra
+
+- **Claude Code.** Studio es un plugin: un comando, una skill y cinco agentes.
+- **Tu repositorio.** Lee tu documentación y material de marca, y escribe todo lo que produce en
+  tu proyecto, en `.keelokit/studio/` y `media/studio/`. Nunca escribe dentro de la carpeta del
+  plugin.
+- **Tu aplicación web en funcionamiento.** Con Playwright puede seguir un recorrido que definas,
+  por ejemplo entrar con un rol y completar una tarea, y capturar pantallas como evidencia. Solo
+  visita los orígenes que le permitas.
+- **Remotion** para renderizar previews y video MP4.
+- **Un proveedor de voz, si querés narración,** como integración opcional. Nunca recibe una clave
+  por la conversación, solo el nombre de una variable de entorno.
+- **Keelokit,** con el que comparte marketplace. Son independientes; podés usar uno sin el otro.
+
+## Cómo empezar
+
+Necesitás Node 22.16 o superior y Claude Code. Para renderizar imágenes y video también un
+Chromium que le indiques a Studio (build headless-shell o Chrome for Testing). Studio nunca
+descarga un navegador por su cuenta.
+
+**Desde el zip.** Solo contiene código fuente, así que es igual en cualquier sistema operativo.
+Descargá [`keelokit-studio-plugin.zip`](https://github.com/leosimini/keelokit-studio/raw/main/releases/keelokit-studio-plugin.zip)
+y corré:
 
 ```bash
 unzip keelokit-studio-plugin.zip -d keelokit-studio
@@ -58,16 +110,17 @@ cd /ruta/al/repo/que/querés/explicar
 claude --plugin-dir /ruta/a/keelokit-studio
 ```
 
-Después corré `/keelokit-studio:start`. Si te saltás el `npm ci`, el comando te dice qué correr.
+Después corré `/keelokit-studio:start`. Si te saltás el `npm ci`, el comando te dice exactamente
+qué ejecutar.
 
-**Desde el marketplace de Keelokit**, cuando haya una versión revisada fijada ahí:
+**Desde el marketplace de Keelokit,** cuando haya una versión revisada fijada ahí:
 
 ```bash
 claude plugin marketplace add leosimini/keelokit
 claude plugin install keelokit-studio@keelokit
 ```
 
-**Desde el código**, para trabajar en él:
+**Desde el código,** si querés trabajar en él:
 
 ```bash
 git clone https://github.com/leosimini/keelokit-studio && cd keelokit-studio
@@ -78,15 +131,20 @@ claude --plugin-dir "$PWD"
 
 ## Para tener en cuenta
 
-- **Remotion** tiene términos comerciales propios; Studio es MIT y no relicencia Remotion.
-- **La captura móvil nativa no está implementada.** La captura web con Playwright funciona; para
-  lo demás aportás el material y Studio lo registra como aportado, no como verificado.
-- **Voz** y otras integraciones son opcionales; nunca reciben una clave desde la conversación,
-  solo el nombre de una variable de entorno.
-- El MP4 renderizado **todavía no tiene pista de audio**. La narración está en el guion y en los
-  subtítulos, no en el sonido. El manifiesto lo declara.
-- Todavía no corrí una conversación completa autenticada desde la interfaz de Claude. Está
-  verificado que el plugin carga con su comando, su skill y sus cinco agentes.
+- **Los videos todavía no tienen sonido.** La narración está en el guion y en los subtítulos
+  exportados, pero el MP4 no tiene pista de audio. El manifiesto del render lo declara.
+- **Solo aplicaciones web.** La captura de apps móviles nativas no está implementada. Para todo lo
+  demás podés aportar tus propias grabaciones, y Studio las trata como aportadas por vos, no como
+  verificadas.
+- **Remotion tiene sus propios términos comerciales.** Studio es MIT y no los cambia; confirmá que
+  tu organización es elegible antes de renderizar.
+- **Usa más tokens que un chat común,** porque varios agentes trabajan en cada pieza.
+- **Los controles atrapan errores, no manipulación.** Evitan que un agente se salte un paso o
+  invente una afirmación. No evitan que alguien edite los archivos a mano. El detalle está en
+  [`docs/trust-model.md`](docs/trust-model.md).
+- **Qué está verificado:** el plugin carga en Claude Code con su comando, su skill y sus cinco
+  agentes, y pasan los tests, el empaquetado y el render. Todavía no corrí una sesión larga y
+  completamente autenticada desde la app de escritorio de Claude, así que esperá asperezas ahí.
 
 ## Licencia
 
