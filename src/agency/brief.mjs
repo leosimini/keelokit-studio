@@ -44,7 +44,11 @@ function semanticErrors(brief, audiences, knownSourceIds) {
     else if (audience.confirmation_status === "rejected") errors.push(`brief.json: rejected audience ${audienceId} cannot be included`);
   }
   const treatedIds = new Set(treatmentIds);
+  const languages = [brief.languages.primary, ...brief.languages.additional];
+  if (brief.languages.additional.includes(brief.languages.primary)) errors.push("brief.json: the primary language cannot also be an additional language");
+  for (const language of languages) if (!brief.messages.some((message) => message.language === language)) errors.push(`brief.json: language ${language} has no supported message`);
   for (const message of brief.messages) {
+    if (!languages.includes(message.language)) errors.push(`brief.json: message language ${message.language} is not a brief language`);
     for (const audienceId of message.audience_ids) if (!treatedIds.has(audienceId)) errors.push(`brief.json: message references untreated audience ${audienceId}`);
     for (const sourceId of message.source_ids) if (!sourceIds.has(sourceId)) errors.push(`brief.json: message references unknown source ${sourceId}`);
   }
@@ -68,7 +72,7 @@ export function createAudienceMap({projectId, candidates}) {
   return result;
 }
 
-export function createBrief({projectId, version, audiences, knownSourceIds, objective, audienceTreatments, messages, channels, visibility, ui, scope, budget, reviewers, successCriteria}) {
+export function createBrief({projectId, version, audiences, knownSourceIds, objective, languages, audienceTreatments, messages, channels, visibility, ui, scope, budget, reviewers, successCriteria}) {
   assertSchema(validateAudiences, audiences, "audiences.json");
   if (!Array.isArray(knownSourceIds)) throw new TypeError("knownSourceIds must be an array");
   const brief = {
@@ -77,6 +81,7 @@ export function createBrief({projectId, version, audiences, knownSourceIds, obje
     brief_id: stableId("brief", {projectId}),
     version,
     objective,
+    languages: structuredClone(languages),
     audience_treatments: structuredClone(audienceTreatments),
     messages: structuredClone(messages),
     channels: [...channels],
@@ -106,6 +111,7 @@ export function renderBriefMarkdown(brief, audiences, knownSourceIds) {
     `# Product marketing brief — v${brief.version}`,
     "",
     `Objective: ${inline(brief.objective)}`,
+    `Languages: ${[brief.languages.primary, ...brief.languages.additional].map(inline).join(", ")} (primary first)`,
     `Channels: ${brief.channels.map(inline).join(", ")}`,
     `Visibility: ${inline(brief.visibility)}`,
     `UI: ${brief.ui.surfaces.map(inline).join(", ")} (${inline(brief.ui.build ?? "build unconfirmed")})`,
@@ -122,7 +128,7 @@ export function renderBriefMarkdown(brief, audiences, knownSourceIds) {
   lines.push("", "## Supported messages");
   for (const message of brief.messages) {
     const names = message.audience_ids.map((audienceId) => inline(byId.get(audienceId).public_name));
-    lines.push(`- ${inline(message.text)} [audiences: ${names.join(", ")}; sources: ${message.source_ids.map(inline).join(", ")}]`);
+    lines.push(`- ${inline(message.text)} [${inline(message.language)}; audiences: ${names.join(", ")}; sources: ${message.source_ids.map(inline).join(", ")}]`);
   }
   lines.push("", "## Scope", ...brief.scope.included.map((item) => `- Included: ${inline(item)}`), ...brief.scope.excluded.map((item) => `- Excluded: ${inline(item)}`), "", "## Success criteria", ...brief.success_criteria.map((item) => `- ${inline(item)}`), "");
   return lines.join("\n");

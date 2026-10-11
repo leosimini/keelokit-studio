@@ -15,12 +15,13 @@ function briefInput(audiences) {
     audiences,
     knownSourceIds: sourceIds,
     objective: "activation",
+    languages: {primary: "en-US", additional: []},
     audienceTreatments: audiences.audiences.map(({audience_id}, index) => ({
       audience_id,
       tone: {value: index === 0 ? "Direct and practical" : "Precise", basis: index === 0 ? "explicit" : "detected", confirmation_status: index === 0 ? "confirmed" : "proposed"},
       voice: {value: null, basis: "none", confirmation_status: "not-applicable"}
     })),
-    messages: audiences.audiences.map(({audience_id, public_name}) => ({text: `${public_name} can complete its task`, audience_ids: [audience_id], source_ids: ["source-manual"]})),
+    messages: audiences.audiences.map(({audience_id, public_name}) => ({text: `${public_name} can complete its task`, language: "en-US", audience_ids: [audience_id], source_ids: ["source-manual"]})),
     channels: ["documentation"],
     visibility: "public",
     ui: {surfaces: ["web"], build: "build-42"},
@@ -119,3 +120,16 @@ test("review view exposes material budget, reviewer, and audience assignment cha
   assert.match(secondView, /audiences: Operators/);
 });
 
+
+test("a brief declares its languages and supports a message in each", () => {
+  const audiences = createAudienceMap({projectId: "product-a", candidates: [audienceCandidate("member", "Members", "activation")]});
+  const input = briefInput(audiences);
+  assert.deepEqual(createBrief(input).languages, {primary: "en-US", additional: []});
+  const { languages, ...withoutLanguages } = input;
+  assert.throws(() => createBrief(withoutLanguages), BriefValidationError);
+  assert.throws(() => createBrief({...input, languages: {primary: "en-US", additional: ["es-AR"]}}), /language es-AR has no supported message/);
+  assert.throws(() => createBrief({...input, languages: {primary: "en-US", additional: ["en-US"]}}), /primary language/);
+  assert.throws(() => createBrief({...input, messages: [{...input.messages[0], language: "fr-FR"}]}), /not a brief language/);
+  const bilingual = createBrief({...input, languages: {primary: "en-US", additional: ["es-AR"]}, messages: [input.messages[0], {...input.messages[0], text: "Los miembros completan su tarea", language: "es-AR"}]});
+  assert.match(renderBriefMarkdown(bilingual, audiences, sourceIds), /Languages: en-US, es-AR/);
+});

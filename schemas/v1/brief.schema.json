@@ -4,7 +4,7 @@
   "title": "Keelokit Studio brief",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "project_id", "brief_id", "version", "objective", "audience_treatments", "messages", "channels", "visibility", "ui", "scope", "budget", "reviewers", "success_criteria"],
+  "required": ["schema_version", "project_id", "brief_id", "version", "objective", "languages", "audience_treatments", "messages", "channels", "visibility", "ui", "scope", "budget", "reviewers", "success_criteria"],
   "$defs": {
     "creative_choice": {
       "type": "object",
@@ -43,15 +43,25 @@
         }
       }
     },
+    "languages": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary", "additional"],
+      "properties": {
+        "primary": {"type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$"},
+        "additional": {"type": "array", "items": {"type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$"}, "uniqueItems": true}
+      }
+    },
     "messages": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["text", "audience_ids", "source_ids"],
+        "required": ["text", "language", "audience_ids", "source_ids"],
         "properties": {
           "text": {"type": "string", "minLength": 1},
+          "language": {"type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$"},
           "audience_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
           "source_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true}
         }
