@@ -3,6 +3,7 @@ import {createHash} from "node:crypto";
 import {readFile} from "node:fs/promises";
 import {resolve} from "node:path";
 import {contentHash, stableId} from "../core/ids.mjs";
+import {measureWav} from "../qa/measure.mjs";
 
 const schema = JSON.parse(await readFile(resolve(import.meta.dirname, "../../schemas/v1/voice-artifact.schema.json"), "utf8"));
 const validate = new Ajv2020({allErrors: true, strict: true}).compile(schema);
@@ -60,7 +61,15 @@ function requestIdentity({pieceId, sceneId, text, config}) {
   };
 }
 
+// Narration must be WAV so its length is measured here, never trusted from the provider.
+function measuredAudio(response) {
+  if (response.audio_bytes == null) return null;
+  if (response.content_type !== "audio/wav") throw new VoiceAdapterError("unsupported_audio", `narration audio must be audio/wav, not ${response.content_type}`);
+  try { return measureWav(response.audio_bytes).duration_seconds; } catch { throw new VoiceAdapterError("unsupported_audio", "the provider returned audio that is not a measurable WAV file"); }
+}
+
 function artifact({pieceId, sceneId, identity, response}) {
+  const measuredDuration = measuredAudio(response);
   const audio = response.audio_bytes == null ? null : {
     content_type: response.content_type,
     sha256: createHash("sha256").update(response.audio_bytes).digest("hex"),
@@ -82,7 +91,7 @@ function artifact({pieceId, sceneId, identity, response}) {
     provider_job_id: response.provider_job_id ?? null,
     known_cost: response.known_cost ?? null,
     currency: response.currency ?? null,
-    duration_seconds: response.duration_seconds ?? null,
+    duration_seconds: measuredDuration ?? response.duration_seconds ?? null,
     alignment: response.alignment ?? null,
     audio,
     limitations: response.limitations ?? []
@@ -102,11 +111,11 @@ export async function generateVoice({pieceId, sceneId, narration, config, provid
   if (typeof pieceId !== "string" || !pieceId || typeof sceneId !== "string" || !sceneId) throw new VoiceAdapterError("invalid_input", "pieceId and sceneId are required");
   const text = approvedNarration(narration);
   const identity = requestIdentity({pieceId, sceneId, text, config: plainObject(config, "config")});
-  if (cache.has(identity.requestHash)) return {artifact: structuredClone(cache.get(identity.requestHash)), cache_hit: true};
+  if (cache.has(identity.requestHash)) { const cached = cache.get(identity.requestHash); return {artifact: structuredClone(cached.artifact), audio_bytes: cached.audio_bytes, cache_hit: true}; }
   const capability = await voiceCapability(provider);
   if (capability.status !== "available") {
     const result = artifact({pieceId, sceneId, identity, response: {status: "unavailable", limitations: [capability.reason]}});
-    return {artifact: result, cache_hit: false};
+    return {artifact: result, audio_bytes: null, cache_hit: false};
   }
   if (budget.remaining !== null) {
     const estimate = typeof provider.estimate === "function" ? await provider.estimate({text, configuration: identity.normalized}) : null;
@@ -120,8 +129,9 @@ export async function generateVoice({pieceId, sceneId, narration, config, provid
     response = {status: "failed", limitations: [`Provider submission failed (${typeof error?.code === "string" ? error.code : error?.name ?? "Error"}); provider error text is not persisted`]};
   }
   const result = artifact({pieceId, sceneId, identity, response});
-  if (["succeeded", "uncertain"].includes(result.status)) cache.set(identity.requestHash, structuredClone(result));
-  return {artifact: result, cache_hit: false};
+  const audio_bytes = response.audio_bytes ?? null;
+  if (["succeeded", "uncertain"].includes(result.status)) cache.set(identity.requestHash, {artifact: structuredClone(result), audio_bytes});
+  return {artifact: result, audio_bytes, cache_hit: false};
 }
 
 export async function queryUncertainVoice({record, provider, cache = new Map()}) {
@@ -130,12 +140,34 @@ export async function queryUncertainVoice({record, provider, cache = new Map()})
   const response = await provider.query(record.provider_job_id);
   const identity = {requestHash: record.request_hash, textHash: record.text_hash, configurationHash: record.configuration_hash, normalized: {provider: record.provider, model: record.model, voice_id: record.voice_id, options: record.options}};
   const result = artifact({pieceId: record.piece_id, sceneId: record.scene_id, identity, response: {...response, provider_job_id: response.provider_job_id ?? record.provider_job_id}});
-  if (["succeeded", "failed"].includes(result.status)) cache.set(result.request_hash, structuredClone(result));
-  return result;
+  if (["succeeded", "failed"].includes(result.status)) cache.set(result.request_hash, {artifact: structuredClone(result), audio_bytes: response.audio_bytes ?? null});
+  return {artifact: result, audio_bytes: response.audio_bytes ?? null};
+}
+
+// A short, valid WAV: one soft tone burst per word. It stands in for a voice in tests and drafts and is never presented as speech.
+export function synthesizeToneNarration(text, {sampleRate = 24000, secondsPerWord = 0.38} = {}) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const wordSamples = Math.round(sampleRate * secondsPerWord);
+  const pcm = Buffer.alloc(words.length * wordSamples * 2);
+  words.forEach((word, index) => {
+    const frequency = 180 + ((word.length * 37 + index * 23) % 160);
+    for (let sample = 0; sample < wordSamples; sample += 1) {
+      const envelope = Math.min(1, sample / 400, (wordSamples - sample) / 1200);
+      pcm.writeInt16LE(Math.round(Math.sin((2 * Math.PI * frequency * sample) / sampleRate) * 6000 * envelope * (sample < wordSamples * 0.8 ? 1 : 0)), (index * wordSamples + sample) * 2);
+    }
+  });
+  const header = Buffer.alloc(44);
+  header.write("RIFF", 0); header.writeUInt32LE(36 + pcm.length, 4); header.write("WAVEfmt ", 8); header.writeUInt32LE(16, 16); header.writeUInt16LE(1, 20); header.writeUInt16LE(1, 22);
+  header.writeUInt32LE(sampleRate, 24); header.writeUInt32LE(sampleRate * 2, 28); header.writeUInt16LE(2, 32); header.writeUInt16LE(16, 34); header.write("data", 36); header.writeUInt32LE(pcm.length, 40);
+  return {audio_bytes: Buffer.concat([header, pcm]), alignment: words.map((word, index) => ({start_seconds: index * secondsPerWord, end_seconds: (index + 1) * secondsPerWord, text: word})), duration_seconds: words.length * secondsPerWord};
 }
 
 export function createDeterministicVoiceProvider({mode = "success"} = {}) {
   const jobs = new Map();
+  const success = (request, jobId) => {
+    const tone = synthesizeToneNarration(request.text);
+    return {status: "succeeded", provider_job_id: jobId, known_cost: 0.01, currency: "USD", duration_seconds: tone.duration_seconds, alignment: tone.alignment, content_type: "audio/wav", audio_bytes: tone.audio_bytes, limitations: ["Synthetic tones, not speech: for tests and drafts only"]};
+  };
   return {
     async capability() { return mode === "unavailable" ? {status: "unavailable", reason: "Synthetic provider disabled"} : {status: "available"}; },
     async estimate() { return {amount: 0.01, currency: "USD"}; },
@@ -146,12 +178,12 @@ export function createDeterministicVoiceProvider({mode = "success"} = {}) {
         jobs.set(provider_job_id, request);
         return {status: "uncertain", provider_job_id, known_cost: null, currency: "USD", limitations: ["Provider outcome is uncertain; query before resubmission"]};
       }
-      return {status: "succeeded", provider_job_id: stableId("voice-job", request.request_hash), known_cost: 0.01, currency: "USD", duration_seconds: 1, alignment: [{start_seconds: 0, end_seconds: 1, text: request.text}], content_type: "audio/wav", audio_bytes: Buffer.from(`synthetic:${request.request_hash}`), limitations: ["Synthetic audio does not validate provider quality"]};
+      return success(request, stableId("voice-job", request.request_hash));
     },
     async query(jobId) {
       const request = jobs.get(jobId);
       if (!request) return {status: "failed", limitations: ["Synthetic job was not found"]};
-      return {status: "succeeded", provider_job_id: jobId, known_cost: 0.01, currency: "USD", duration_seconds: 1, alignment: null, content_type: "audio/wav", audio_bytes: Buffer.from(`synthetic:${request.request_hash}`), limitations: ["Timing alignment was not supplied"]};
+      return {...success(request, jobId), alignment: null};
     }
   };
 }

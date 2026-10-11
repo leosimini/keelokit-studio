@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {contentHash} from "../src/core/ids.mjs";
 import {createDeterministicVoiceProvider, generateVoice, queryUncertainVoice, voiceCapability, VoiceAdapterError} from "../src/adapters/voice.mjs";
+import {measureWav} from "../src/qa/measure.mjs";
+import {createHash} from "node:crypto";
 
 const text = "Complete the verified task.";
 const narration = {text, approval: {status: "approved", text_hash: contentHash(text)}};
@@ -15,7 +17,7 @@ test("generates traceable optional audio and reuses the exact cached request", a
   const second = await generateVoice({...base, provider, cache});
   assert.equal(first.artifact.status, "succeeded");
   assert.equal(first.artifact.text_hash, contentHash(text));
-  assert.equal(first.artifact.duration_seconds, 1);
+  assert.ok(Math.abs(first.artifact.duration_seconds - 1.52) < 0.001);
   assert.equal(second.cache_hit, true);
   assert.deepEqual(second.artifact, first.artifact);
 });
@@ -54,8 +56,9 @@ test("queries uncertain provider jobs before any resubmission", async () => {
   assert.equal(repeated.cache_hit, true);
   assert.equal(repeated.artifact.provider_job_id, uncertain.artifact.provider_job_id);
   const resolved = await queryUncertainVoice({record: uncertain.artifact, provider, cache});
-  assert.equal(resolved.status, "succeeded");
-  assert.equal(resolved.provider_job_id, uncertain.artifact.provider_job_id);
+  assert.equal(resolved.artifact.status, "succeeded");
+  assert.equal(resolved.artifact.provider_job_id, uncertain.artifact.provider_job_id);
+  assert.ok(Buffer.isBuffer(resolved.audio_bytes));
   await assert.rejects(() => queryUncertainVoice({record: uncertain.artifact, provider: {}}), /do not resubmit automatically/);
 });
 
@@ -86,4 +89,24 @@ test("does not replay a failed provider result from cache", async () => {
   const second = await generateVoice(base);
   assert.equal(second.cache_hit, false);
   assert.equal(second.artifact.status, "succeeded");
+});
+
+test("returns the measured audio itself, not only its hash, and rejects audio it cannot place in a video", async () => {
+  const provider = createDeterministicVoiceProvider();
+  const cache = new Map();
+  const first = await generateVoice({...base, provider, cache});
+  assert.ok(Buffer.isBuffer(first.audio_bytes));
+  assert.equal(createHash("sha256").update(first.audio_bytes).digest("hex"), first.artifact.audio.sha256);
+  assert.equal(first.artifact.audio.content_type, "audio/wav");
+  assert.ok(Math.abs(measureWav(first.audio_bytes).duration_seconds - first.artifact.duration_seconds) < 0.001, "the artifact carries the measured duration");
+  assert.deepEqual(first.artifact.alignment.map(({text}) => text).join(" "), text);
+  const again = await generateVoice({...base, provider, cache});
+  assert.equal(again.cache_hit, true);
+  assert.deepEqual(again.audio_bytes, first.audio_bytes);
+  const lying = {capability: async () => ({status: "available"}), submit: async () => ({status: "succeeded", content_type: "audio/wav", audio_bytes: first.audio_bytes, duration_seconds: 99, known_cost: 0, currency: "USD", limitations: []})};
+  assert.ok(Math.abs((await generateVoice({...base, provider: lying, config: {...config, voice_id: "other"}})).artifact.duration_seconds - first.artifact.duration_seconds) < 0.001, "a provider-reported duration never overrides the measured one");
+  const mp3 = {capability: async () => ({status: "available"}), submit: async () => ({status: "succeeded", content_type: "audio/mpeg", audio_bytes: Buffer.from("ID3"), duration_seconds: 2, known_cost: 0, currency: "USD", limitations: []})};
+  await assert.rejects(() => generateVoice({...base, provider: mp3, config: {...config, voice_id: "mp3"}}), (error) => error.code === "unsupported_audio");
+  const broken = {capability: async () => ({status: "available"}), submit: async () => ({status: "succeeded", content_type: "audio/wav", audio_bytes: Buffer.from("<html>not audio</html>"), duration_seconds: 5, known_cost: 0, currency: "USD", limitations: []})};
+  await assert.rejects(() => generateVoice({...base, provider: broken, config: {...config, voice_id: "broken"}}), (error) => error.code === "unsupported_audio");
 });
