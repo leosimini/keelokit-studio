@@ -12,5 +12,5 @@ Capabilities are declared by verified adapters. A missing adapter blocks only it
 - web capture uses a saved Playwright journey and verifies the observed result before allowing claims;
 - native and desktop support are not declared until their adapters are implemented and tested.
 
-The web adapter requires a resolved Chromium executable and reports `blocked` when it cannot launch it. Capture uses an explicit request-origin allowlist (the application origin by default), requires a visible role assertion, and stores only sanitized failure messages. Playwright is pinned as a development dependency; clean-release packaging remains a C06 delivery check.
+The web adapter requires a resolved Chromium executable and reports `blocked` when it cannot launch it. Capture uses an explicit request-origin allowlist (the application origin by default), requires a visible role assertion, and stores only sanitized failure messages. Playwright is a pinned runtime dependency in the self-contained plugin archive; no browser binary is downloaded or bundled implicitly.
 
