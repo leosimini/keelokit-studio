@@ -13,6 +13,7 @@ const validate = new Ajv2020({allErrors: true, strict: true}).compile(schema);
 export class DashboardError extends Error {}
 
 function assertDashboard(value) {
+  if (value && value.recommendations === undefined) value = {...value, recommendations: []};
   if (!validate(value)) throw new DashboardError((validate.errors ?? []).map(({instancePath, message}) => `${instancePath || "/"}: ${message}`).join("; "));
   const suiteIds = value.suites.map(({suite_id}) => suite_id);
   const pieceIds = value.pieces.map(({piece_id}) => piece_id);
@@ -44,8 +45,8 @@ async function pathFor(projectRoot) {
   return resolve(directory, "dashboard.json");
 }
 
-export function createDashboard({projectId, suites, pieces, now = new Date().toISOString()}) {
-  return assertDashboard({schema_version: 1, revision: 0, project_id: projectId, suites: structuredClone(suites), pieces: pieces.map((piece) => ({piece_id: piece.piece_id, suite_id: piece.suite_id, title: piece.title, status: piece.status ?? "draft", blockers: [...(piece.blockers ?? [])], previews: [...(piece.previews ?? [])], exports: [...(piece.exports ?? [])], history: [...(piece.history ?? [])], publications: [...(piece.publications ?? [])]})), updated_at: now});
+export function createDashboard({projectId, suites, pieces, recommendations = [], now = new Date().toISOString()}) {
+  return assertDashboard({schema_version: 1, revision: 0, project_id: projectId, suites: structuredClone(suites), pieces: pieces.map((piece) => ({piece_id: piece.piece_id, suite_id: piece.suite_id, title: piece.title, status: piece.status ?? "draft", blockers: [...(piece.blockers ?? [])], previews: [...(piece.previews ?? [])], exports: [...(piece.exports ?? [])], history: [...(piece.history ?? [])], publications: [...(piece.publications ?? [])]})), recommendations: structuredClone(recommendations), updated_at: now});
 }
 
 export async function initializeDashboard(projectRoot, dashboard) {

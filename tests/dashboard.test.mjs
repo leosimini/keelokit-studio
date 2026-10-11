@@ -5,6 +5,7 @@ import {join} from "node:path";
 import test from "node:test";
 import {createDashboard, initializeDashboard, loadDashboard, saveDashboard, setPublication} from "../src/dashboard/store.mjs";
 import {renderDashboardHtml} from "../src/dashboard/html.mjs";
+import {projectDashboard} from "../src/dashboard/project.mjs";
 
 function sample(now = "2026-10-11T15:00:00.000Z") { return createDashboard({projectId: "project-one", suites: [{suite_id: "suite-one", title: "Activation", piece_ids: ["piece-one"]}], pieces: [{piece_id: "piece-one", suite_id: "suite-one", title: "First task", status: "ready", blockers: [], previews: [{artifact_id: "preview-one", label: "Preview", path: "media/studio/preview.png", status: "not-reviewed"}], exports: [{artifact_id: "export-one", label: "Clean master", path: "media/studio/master.mp4", status: "passed"}], publications: [{review_id: "review-one", channel: "configured-channel", published: false, url: null, published_at: null, updated_at: now}]}], now}); }
 
@@ -29,6 +30,22 @@ test("renders a standalone HTML view without trusting project text as markup", (
   assert.match(html, /Blockers/); assert.match(html, /Previews/); assert.match(html, /Exports/); assert.match(html, /Publication annotations/);
   assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
   assert.match(html, /Export state/);
+  assert.match(html, /Recommended publication queue/);
+});
+
+test("projects production and ranking idempotently without erasing publication history", () => {
+  const dashboard = sample();
+  dashboard.pieces[0].history.push({revision_id: "publication-event", kind: "publication", status: "published", recorded_at: "2026-10-11T15:10:00.000Z", details: {channel: "configured-channel"}});
+  const plan = {project_id: "project-one", suites: [{suite_id: "suite-one", objective: "Activation", pieces: [{piece_id: "piece-one", intention: "First task"}]}]};
+  const queue = {project_id: "project-one", items: [{candidate_id: "candidate-one", piece_id: "piece-one", channel: "configured-channel", position: 1, status: "ready", blockers: [], selection_reason: "Addresses the highest-friction activation step.", recipe_ids: ["prerequisite-tutorial"], impact_hypothesis: "A concrete walkthrough may reduce setup uncertainty.", observed_outcomes: []}]};
+  const event = {kind: "render", status: "passed", recorded_at: "2026-10-11T15:20:00.000Z", details: {manifest_id: "manifest-one"}};
+  const update = {piece_id: "piece-one", status: "ready", blockers: [], previews: [{artifact_id: "preview-two", label: "Motion preview", path: "media/studio/motion.mp4", status: "passed"}], exports: [], events: [event]};
+  const first = projectDashboard({dashboard, plan, queue, pieceUpdates: [update], now: "2026-10-11T15:30:00.000Z"});
+  const replayed = projectDashboard({dashboard: first, plan, queue, pieceUpdates: [update], now: "2026-10-11T15:31:00.000Z"});
+  assert.equal(replayed.pieces[0].history.filter(({kind}) => kind === "render").length, 1);
+  assert.ok(replayed.pieces[0].history.some(({revision_id}) => revision_id === "publication-event"));
+  assert.deepEqual(replayed.pieces[0].publications, dashboard.pieces[0].publications);
+  assert.equal(replayed.recommendations[0].recipe_ids[0], "prerequisite-tutorial");
 });
 
 test("rejects executable artifact paths and invalid publication metadata", () => {

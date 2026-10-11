@@ -3,7 +3,7 @@
   "$id": "https://keelokit.com/studio/schemas/v1/dashboard-state.schema.json",
   "title": "Keelokit Studio dashboard state",
   "type": "object", "additionalProperties": false,
-  "required": ["schema_version", "revision", "project_id", "suites", "pieces", "updated_at"],
+  "required": ["schema_version", "revision", "project_id", "suites", "pieces", "recommendations", "updated_at"],
   "properties": {
     "schema_version": {"const": 1}, "revision": {"type": "integer", "minimum": 0}, "project_id": {"type": "string", "minLength": 1},
     "suites": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["suite_id", "title", "piece_ids"], "properties": {"suite_id": {"type": "string", "minLength": 1}, "title": {"type": "string", "minLength": 1}, "piece_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}}}},
@@ -13,6 +13,10 @@
       "previews": {"type": "array", "items": {"$ref": "#/$defs/artifact"}}, "exports": {"type": "array", "items": {"$ref": "#/$defs/artifact"}},
       "history": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["revision_id", "kind", "status", "recorded_at", "details"], "properties": {"revision_id": {"type": "string", "minLength": 1}, "kind": {"type": "string", "minLength": 1}, "status": {"type": "string", "minLength": 1}, "recorded_at": {"type": "string", "minLength": 1}, "details": {"type": "object"}}}},
       "publications": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["review_id", "channel", "published", "url", "published_at", "updated_at"], "properties": {"review_id": {"type": "string", "minLength": 1}, "channel": {"type": "string", "minLength": 1}, "published": {"type": "boolean"}, "url": {"type": ["string", "null"]}, "published_at": {"type": ["string", "null"]}, "updated_at": {"type": "string", "minLength": 1}}}}
+    }}},
+    "recommendations": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["candidate_id", "piece_id", "channel", "position", "status", "blockers", "selection_reason", "recipe_ids", "impact_hypothesis", "observed_outcomes"], "properties": {
+      "candidate_id": {"type": "string", "minLength": 1}, "piece_id": {"type": "string", "minLength": 1}, "channel": {"type": "string", "minLength": 1}, "position": {"type": "integer", "minimum": 1}, "status": {"enum": ["ready", "blocked", "published"]},
+      "blockers": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}, "selection_reason": {"type": "string", "minLength": 1}, "recipe_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}, "impact_hypothesis": {"type": "string", "minLength": 1}, "observed_outcomes": {"type": "array", "items": {"type": "object"}}
     }}},
     "updated_at": {"type": "string", "minLength": 1}
   },
