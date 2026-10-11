@@ -111,7 +111,9 @@ export async function captureWebJourney({projectRoot, projectId, baseUrl, allowe
   if (!Number.isInteger(actionTimeoutMs) || actionTimeoutMs < 1) throw new TypeError("actionTimeoutMs must be a positive integer");
   if (typeof demoDataId !== "string" || demoDataId.length === 0) throw new TypeError("demoDataId is required and must identify the non-secret demo dataset");
   const {base, origins} = configuredOrigins(baseUrl, allowedOrigins);
-  const procedureHash = stableId("procedure", {journey, allowedOrigins: [...origins].sort(), actionTimeoutMs});
+  // Step values may be credentials: they must never be recoverable from the stored hash.
+  const hashedJourney = {...journey, steps: journey.steps.map((step) => step.value === undefined ? step : {...step, value: "[value-not-hashed]"})};
+  const procedureHash = stableId("procedure", {journey: hashedJourney, allowedOrigins: [...origins].sort(), actionTimeoutMs});
   const captureId = stableId("capture", {projectId, procedureHash, role, build, commit, locale, flags: [...flags].sort(), viewport, demoDataId});
   const hash = `capture-context:${contextHash({build, commit, procedureHash, role, locale, flags, viewport, demoDataId, allowedOrigins: origins})}`;
 
@@ -135,6 +137,18 @@ export async function captureWebJourney({projectRoot, projectId, baseUrl, allowe
       context = await browser.newContext({locale, viewport, serviceWorkers: "block"});
       context.setDefaultTimeout(actionTimeoutMs);
       context.setDefaultNavigationTimeout(actionTimeoutMs);
+      await context.routeWebSocket(/.*/, (socket) => {
+        let origin;
+        try {
+          const url = new URL(socket.url());
+          origin = `${url.protocol === "wss:" ? "https:" : "http:"}//${url.host}`;
+        } catch {
+          origin = "invalid-origin";
+        }
+        if (origins.has(origin)) { socket.connectToServer(); return; }
+        blockedOrigins.add(origin);
+        socket.close();
+      });
       await context.route("**/*", async (route) => {
         let origin;
         try {

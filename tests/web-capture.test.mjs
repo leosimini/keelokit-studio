@@ -4,6 +4,7 @@ import {mkdtemp, readFile, rm, stat} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {resolve} from "node:path";
 import test from "node:test";
+import {stableId} from "../src/core/ids.mjs";
 import {chromiumExecutable} from "./support/chromium.mjs";
 import {captureWebJourney, webCaptureCapability} from "../src/adapters/web-capture.mjs";
 
@@ -290,5 +291,36 @@ test("closes context and browser when isolated page creation fails", async () =>
     assert.equal(browserClosed, 1);
   } finally {
     await rm(projectRoot, {recursive: true, force: true});
+  }
+});
+
+test("blocks WebSocket connections to origins outside the allowlist and does not hash step values", async () => {
+  let upgrades = 0;
+  const external = createServer();
+  external.on("upgrade", (request, socket) => { upgrades += 1; socket.destroy(); });
+  await new Promise((resolveListen) => external.listen(0, "127.0.0.1", resolveListen));
+  const externalPort = external.address().port;
+  const app = createServer((request, response) => {
+    response.writeHead(200, {"content-type": "text/html"});
+    response.end(`<!doctype html><p id="active-role">operator</p><input id="task"><p id="result">ready</p><script>new WebSocket("ws://127.0.0.1:${externalPort}/socket");</script>`);
+  });
+  await new Promise((resolveListen) => app.listen(0, "127.0.0.1", resolveListen));
+  const projectRoot = await mkdtemp(resolve(tmpdir(), "keelokit-studio-web-"));
+  try {
+    const baseUrl = `http://127.0.0.1:${app.address().port}`;
+    const attempt = options(projectRoot, baseUrl);
+    attempt.journey.steps = [{action: "goto", path: "/"}, {action: "fill", selector: "#task", value: "hunter2"}];
+    attempt.journey.verify = {selector: "#result", text: "ready"};
+    const result = await captureWebJourney(attempt);
+    await new Promise((resolveWait) => setTimeout(resolveWait, 300));
+    assert.equal(upgrades, 0);
+    assert.equal(result.status, "failed");
+    const guess = attempt.journey.steps.map((step) => step.value === "hunter2" ? {...step} : step);
+    assert.equal(JSON.stringify(result.evidence).includes("hunter2"), false);
+    assert.equal(stableId("procedure", {journey: {...attempt.journey, steps: guess}, allowedOrigins: [baseUrl], actionTimeoutMs: 10000}) === result.evidence.procedure_hash, false);
+  } finally {
+    await rm(projectRoot, {recursive: true, force: true});
+    await new Promise((resolveClose) => external.close(resolveClose));
+    await new Promise((resolveClose) => app.close(resolveClose));
   }
 });
