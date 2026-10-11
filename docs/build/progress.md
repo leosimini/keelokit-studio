@@ -18,6 +18,7 @@ C02 — agency workflow.
 | C01-04 | verified | canonical IDs, consumer-only paths, scoped capability failures, and provenance limits pass tests and independent review |
 | C02-01 | verified | context/manual adapters preserve source path, observation time, build, classification, hash, and availability limits |
 | C02-02 | verified | intake asks only uncovered scope deltas and persists hash-bound decisions without expanding unrelated blockers |
+| C02-03 | verified | project-defined audiences and a versioned sourced brief preserve explicit tone/voice confirmation and material review fields |
 
 ## Verification ledger
 
@@ -39,6 +40,8 @@ C02 — agency workflow.
 - Independent C02-01 review found three adapter/schema inconsistencies; envelope, build propagation, and README/backlog restrictions were fixed, then confirmed with no remaining P1/P2 findings.
 - `node --test tests/intake.test.mjs`: pass; covers two/three-question batches, scope-local blockers, accumulated scope decisions, restart persistence, and material-change revalidation by subject hash.
 - Independent C02-02 review found scope-union, stale-decision, and decision-ID defects; all were fixed and the reviewer confirmed no remaining P1/P2 findings.
+- `node --test tests/brief.test.mjs`: pass; covers variable audience counts, stable IDs, supported messages, explicit/proposed tone and voice, rejected audiences, cross-document validation, and review-view completeness.
+- Independent C02-03 review found rejected-audience, duplicate/reference, renderer-bypass, and review-omission defects; all were fixed and the reviewer confirmed no remaining P1/P2 findings.
 
 ## Blockers and limits
 
@@ -47,5 +50,5 @@ C02 — agency workflow.
 
 ## Next
 
-Implement C02-03 generic audiences, brief, and tone/voice by relevant audience.
+Implement C02-04 objective-led suites and a prioritized per-piece production plan.
 

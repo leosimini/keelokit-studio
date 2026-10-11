@@ -7,6 +7,7 @@ The first contract set covers the references needed to connect discovery, audien
 - `project-context.json` owns source observations, surfaces, capabilities, and gaps.
 - `source-observations.schema.json` validates transient context/manual adapter output before accepted observations are incorporated into `project-context.json`.
 - `audiences.json` owns stable audience IDs and confirmed audience decisions.
+- `brief.schema.json` owns the versioned agency brief, including audience-specific tone and voice confirmation state.
 - `product-evidence.json` owns reproducible product evidence and allowed claims.
 - `assets.json` owns asset hashes and provenance. An asset without origin is invalid.
 - `content-plan.json` owns suites and planned pieces, including their audience, intention, CTA, evidence, and dependencies.

@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keelokit.com/studio/schemas/v1/brief.schema.json",
+  "title": "Keelokit Studio brief",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project_id", "brief_id", "version", "objective", "audience_treatments", "messages", "channels", "visibility", "ui", "scope", "budget", "reviewers", "success_criteria"],
+  "$defs": {
+    "creative_choice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "basis", "confirmation_status"],
+      "properties": {
+        "value": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]},
+        "basis": {"enum": ["detected", "explicit", "none"]},
+        "confirmation_status": {"enum": ["proposed", "confirmed", "not-applicable"]}
+      },
+      "allOf": [
+        {"if": {"properties": {"basis": {"const": "detected"}}, "required": ["basis"]}, "then": {"properties": {"confirmation_status": {"const": "proposed"}}}},
+        {"if": {"properties": {"basis": {"const": "none"}}, "required": ["basis"]}, "then": {"properties": {"value": {"const": null}, "confirmation_status": {"const": "not-applicable"}}}},
+        {"if": {"properties": {"confirmation_status": {"const": "not-applicable"}}, "required": ["confirmation_status"]}, "then": {"properties": {"basis": {"const": "none"}, "value": {"const": null}}}},
+        {"if": {"properties": {"confirmation_status": {"const": "confirmed"}}, "required": ["confirmation_status"]}, "then": {"properties": {"basis": {"const": "explicit"}, "value": {"type": "string", "minLength": 1}}}}
+      ]
+    }
+  },
+  "properties": {
+    "schema_version": {"const": 1},
+    "project_id": {"type": "string", "minLength": 1},
+    "brief_id": {"type": "string", "pattern": "^brief-[a-f0-9]{16}$"},
+    "version": {"type": "integer", "minimum": 1},
+    "objective": {"enum": ["discovery", "evaluation", "activation", "use", "retention", "news"]},
+    "audience_treatments": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["audience_id", "tone", "voice"],
+        "properties": {
+          "audience_id": {"type": "string", "minLength": 1},
+          "tone": {"$ref": "#/$defs/creative_choice"},
+          "voice": {"$ref": "#/$defs/creative_choice"}
+        }
+      }
+    },
+    "messages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "audience_ids", "source_ids"],
+        "properties": {
+          "text": {"type": "string", "minLength": 1},
+          "audience_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
+          "source_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true}
+        }
+      }
+    },
+    "channels": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
+    "visibility": {"enum": ["public", "unlisted", "private", "internal", "mixed"]},
+    "ui": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surfaces", "build"],
+      "properties": {
+        "surfaces": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
+        "build": {"type": ["string", "null"]}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["included", "excluded"],
+      "properties": {
+        "included": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
+        "excluded": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currency", "limit"],
+      "properties": {
+        "currency": {"type": ["string", "null"]},
+        "limit": {"type": ["number", "null"], "minimum": 0}
+      }
+    },
+    "reviewers": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
+    "success_criteria": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true}
+  }
+}
+
