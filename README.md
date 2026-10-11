@@ -21,5 +21,11 @@ The installation test uses an isolated Claude Code configuration and a temporary
 npx @anthropic-ai/claude-code@2.1.296 --plugin-dir /absolute/path/to/keelokit-studio
 ```
 
+When a reviewed revision is available on the remote repository, Claude Code 2.1.275 or later can install it with:
+
+```text
+/plugin install keelokit-studio --marketplace leosimini/keelokit-studio
+```
+
 Keelokit Studio stores future engagement state and outputs in the consumer project, never in the plugin installation or cache.
 

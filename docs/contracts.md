@@ -7,6 +7,7 @@ The first contract set covers the references needed to connect discovery, audien
 - `project-context.json` owns source observations, surfaces, capabilities, and gaps.
 - `source-observations.schema.json` validates transient context/manual adapter output before accepted observations are incorporated into `project-context.json`.
 - `audiences.json` owns stable audience IDs and confirmed audience decisions.
+- `brand.json` owns sourced identity candidates, confirmation state, video constraints, language/audience treatments, and explicit gaps.
 - `brief.schema.json` owns the versioned agency brief, including audience-specific tone and voice confirmation state.
 - `product-evidence.json` owns reproducible product evidence and allowed claims.
 - `assets.json` owns asset hashes and provenance. An asset without origin is invalid.
@@ -21,5 +22,5 @@ npm run validate:contracts -- /path/to/contracts
 
 Shape validation is not enough. The validator also enforces unique IDs, project consistency, dependency references, source/evidence/asset references, and agreement between a storyboard and its planned piece.
 
-Brand, approval/state, distribution, QA, cost, and job contracts are introduced by the milestones that implement their behavior. They must use the same versioning and single-owner rules.
+Approval/state, distribution, QA, cost, and job contracts are introduced by the milestones that implement their behavior. They must use the same versioning and single-owner rules.
 

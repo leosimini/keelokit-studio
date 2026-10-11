@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keelokit.com/studio/schemas/v1/brand.schema.json",
+  "title": "Keelokit Studio brand profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project_id", "brand_id", "version", "confirmation_status", "source_ids", "logos", "colors", "typography", "video", "motion", "treatments", "pronunciations", "gaps"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "project_id": {"type": "string", "minLength": 1},
+    "brand_id": {"type": "string", "minLength": 1},
+    "version": {"type": "integer", "minimum": 1},
+    "confirmation_status": {"enum": ["proposed", "approved", "rejected"]},
+    "source_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "logos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["asset_id", "role"],
+        "properties": {
+          "asset_id": {"type": "string", "minLength": 1},
+          "role": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "colors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["token", "value", "use", "source_ids", "confirmation_status"],
+        "properties": {
+          "token": {"type": "string", "minLength": 1},
+          "value": {"type": "string", "minLength": 1},
+          "use": {"type": "string", "minLength": 1},
+          "source_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
+          "confirmation_status": {"enum": ["unconfirmed", "approved", "rejected"]}
+        }
+      }
+    },
+    "typography": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["family", "use", "asset_id", "license", "source_ids", "confirmation_status"],
+        "properties": {
+          "family": {"type": "string", "minLength": 1},
+          "use": {"type": "string", "minLength": 1},
+          "asset_id": {"type": ["string", "null"], "minLength": 1},
+          "license": {"type": ["string", "null"]},
+          "source_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
+          "confirmation_status": {"enum": ["unconfirmed", "approved", "rejected"]}
+        }
+      }
+    },
+    "video": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimum_text_px", "safe_area_horizontal", "safe_area_vertical"],
+      "properties": {
+        "minimum_text_px": {"type": ["integer", "null"], "minimum": 1},
+        "safe_area_horizontal": {"type": ["number", "null"], "minimum": 0, "maximum": 0.5},
+        "safe_area_vertical": {"type": ["number", "null"], "minimum": 0, "maximum": 0.5}
+      }
+    },
+    "motion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["guidance", "reduced_motion"],
+      "properties": {
+        "guidance": {"type": ["string", "null"]},
+        "reduced_motion": {"type": ["boolean", "null"]}
+      }
+    },
+    "treatments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["audience_id", "locale", "tone", "voice_id", "voice_model", "confirmation_status"],
+        "properties": {
+          "audience_id": {"type": ["string", "null"], "minLength": 1},
+          "locale": {"type": "string", "minLength": 1},
+          "tone": {"type": ["string", "null"]},
+          "voice_id": {"type": ["string", "null"]},
+          "voice_model": {"type": ["string", "null"]},
+          "confirmation_status": {"enum": ["unconfirmed", "approved", "rejected", "not_applicable"]}
+        }
+      }
+    },
+    "pronunciations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["term", "locale", "guide"],
+        "properties": {
+          "term": {"type": "string", "minLength": 1},
+          "locale": {"type": "string", "minLength": 1},
+          "guide": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "reason"],
+        "properties": {
+          "field": {"type": "string", "minLength": 1},
+          "reason": {"enum": ["missing", "conflicting", "unverified"]}
+        }
+      }
+    }
+  }
+}

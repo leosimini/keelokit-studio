@@ -8,6 +8,7 @@ const schemaDir = join(root, "schemas/v1");
 const documentSchemas = new Map([
   ["project-context.json", "project-context.schema.json"],
   ["audiences.json", "audiences.schema.json"],
+  ["brand.json", "brand.schema.json"],
   ["product-evidence.json", "product-evidence.schema.json"],
   ["assets.json", "assets.schema.json"],
   ["content-plan.json", "content-plan.schema.json"]
@@ -67,6 +68,7 @@ export async function validateContracts(inputDirectory) {
   const sourceIds = new Set(sourceIdList);
   const audiences = documents["audiences.json"].audiences;
   const audienceIds = new Set(audiences.map(({audience_id}) => audience_id));
+  const brand = documents["brand.json"];
   const evidenceIdList = documents["product-evidence.json"].evidence.map(({evidence_id}) => evidence_id);
   const evidenceIds = new Set(evidenceIdList);
   const assets = documents["assets.json"].assets;
@@ -87,6 +89,14 @@ export async function validateContracts(inputDirectory) {
   for (const audience of audiences) {
     for (const sourceId of audience.source_ids) if (!sourceIds.has(sourceId)) errors.push(`audiences.json: audience ${audience.audience_id} references unknown source ${sourceId}`);
   }
+  for (const sourceId of brand.source_ids) if (!sourceIds.has(sourceId)) errors.push(`brand.json: unknown source ${sourceId}`);
+  for (const color of brand.colors) for (const sourceId of color.source_ids) if (!sourceIds.has(sourceId)) errors.push(`brand.json: color ${color.token} references unknown source ${sourceId}`);
+  for (const font of brand.typography) for (const sourceId of font.source_ids) if (!sourceIds.has(sourceId)) errors.push(`brand.json: font ${font.family} references unknown source ${sourceId}`);
+  for (const logo of brand.logos) if (!assetIds.has(logo.asset_id)) errors.push(`brand.json: logo references unknown asset ${logo.asset_id}`);
+  for (const font of brand.typography) if (font.asset_id !== null && !assetIds.has(font.asset_id)) errors.push(`brand.json: font references unknown asset ${font.asset_id}`);
+  for (const treatment of brand.treatments) if (treatment.audience_id !== null && !audienceIds.has(treatment.audience_id)) errors.push(`brand.json: treatment references unknown audience ${treatment.audience_id}`);
+  for (const duplicate of duplicates(brand.colors.map(({token}) => token))) errors.push(`brand.json: duplicate color token ${duplicate}`);
+  for (const duplicate of duplicates(brand.logos.map(({role}) => role))) errors.push(`brand.json: duplicate logo role ${duplicate}`);
   for (const asset of assets) {
     if (asset.evidence_id != null && !evidenceIds.has(asset.evidence_id)) errors.push(`assets.json: asset ${asset.asset_id} references unknown evidence ${asset.evidence_id}`);
   }

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "project_id": "field-service-demo",
+  "brand_id": "brand-field-service",
+  "version": 1,
+  "confirmation_status": "proposed",
+  "source_ids": ["src-readme"],
+  "logos": [],
+  "colors": [],
+  "typography": [],
+  "video": {"minimum_text_px": null, "safe_area_horizontal": null, "safe_area_vertical": null},
+  "motion": {"guidance": null, "reduced_motion": null},
+  "treatments": [],
+  "pronunciations": [],
+  "gaps": [{"field": "identity", "reason": "unverified"}]
+}

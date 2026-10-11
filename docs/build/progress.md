@@ -22,6 +22,11 @@ C03 — identity, evidence, and capture.
 | C02-04 | verified | objective-led suites validate brief scope, evidence needs, execution order, dependency graphs, costs, pending work, and exclusions |
 | C02-05 | verified | review subjects derive plan scope, bind exact documents and relevant audiences, expose material fields, and record explicit approval or revocation |
 | C02-06 | verified | start initializes once and resumes persisted decisions, approvals, renders, jobs, blockers, and material changes by active scope |
+| C03-01 | verified | sourced brand candidates, explicit conflicts/gaps, versioned confirmation state, and a standalone escaped HTML reference pass independent review |
+| C03-02 | pending | evidence compatibility by role/build/locale/feature |
+| C03-03 | pending | repeatable web capture adapter and success/failure fixture |
+| C03-04 | pending | contributed-material ingest with provenance limits |
+| C03-05 | pending | project-local assets, hashes, and dependency tracking |
 
 ## Verification ledger
 
@@ -51,13 +56,17 @@ C03 — identity, evidence, and capture.
 - Independent C02-05 review found one unauthorized-piece P1 and five approval/review P2 defects; all were fixed and the reviewer confirmed no remaining P1/P2 findings.
 - `node --test tests/start.test.mjs`: pass; covers initial/repeated start, delta intake, plan approval, rendered pieces, uncertain jobs, scoped blockers, selective changes, loaded-state authority, and CLI validation.
 - Independent C02-06 review found four re-entry/CLI defects plus one cross-scope refresh defect; all were fixed and the reviewer confirmed no remaining P1/P2 findings.
+- `node --test tests/brand.test.mjs`: pass; covers proposed/unconfirmed identity, source/asset/audience references, absent and conflicting extraction, duplicate roles/tokens, standalone HTML escaping, and CSS injection resistance.
+- Independent C03-01 review reproduced lost usage conflicts and an incomplete reference sheet; both were fixed, regression-tested, and confirmed closed with no remaining P1/P2 findings.
+- Narrative/prompt research was assessed as non-authoritative design evidence. Mechanical evidence gates are queued for C03; selector/composer/reviewer work remains owned by C04 and is not described as model-validated.
 
 ## Blockers and limits
 
 - The build environment has no Claude authentication. Static validation, isolated installation, and plugin loading are testable; model-driven command execution is blocked.
+- GitHub review publication is blocked because the configured `GH_TOKEN` is invalid; local branch and coherent commits remain available.
 - Keelokit marketplace integration is intentionally deferred until Studio is installable from its remote repository and EV-001 passes.
 
 ## Next
 
-Prepare C03 story records, then implement C03-01 brand extraction and a reviewable visual reference.
+Implement C03-02 evidence compatibility by role, build, locale, and feature.
 

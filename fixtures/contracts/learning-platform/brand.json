@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "project_id": "learning-demo",
+  "brand_id": "brand-learning",
+  "version": 1,
+  "confirmation_status": "proposed",
+  "source_ids": ["src-manual"],
+  "logos": [],
+  "colors": [],
+  "typography": [],
+  "video": {"minimum_text_px": null, "safe_area_horizontal": null, "safe_area_vertical": null},
+  "motion": {"guidance": null, "reduced_motion": null},
+  "treatments": [],
+  "pronunciations": [],
+  "gaps": [{"field": "identity", "reason": "unverified"}]
+}

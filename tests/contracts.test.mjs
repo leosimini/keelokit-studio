@@ -106,3 +106,17 @@ test("rejects assets without origin", async () => {
   });
 });
 
+test("rejects brand references that are not present in source, asset, or audience contracts", async () => {
+  await withMutation("brand.json", (brand) => {
+    brand.source_ids = ["source-missing"];
+    brand.logos = [{asset_id: "asset-missing", role: "primary"}];
+    brand.treatments = [{audience_id: "audience-missing", locale: "en-US", tone: null, voice_id: null, voice_model: null, confirmation_status: "unconfirmed"}];
+  }, async (directory) => {
+    const result = await validateContracts(directory);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((error) => error.includes("unknown source source-missing")));
+    assert.ok(result.errors.some((error) => error.includes("unknown asset asset-missing")));
+    assert.ok(result.errors.some((error) => error.includes("unknown audience audience-missing")));
+  });
+});
+
