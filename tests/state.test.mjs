@@ -197,7 +197,7 @@ test("roundtrips populated review and recovery state", async () => {
     const state = createInitialState("consumer-demo");
     state.engagement_phase = "reviewing";
     state.decisions.push({decision_id: "decision-1", topic: "language", value: "en", source: "user", recorded_at: state.updated_at});
-    state.pieces.push({piece_id: "piece-1", status: "rendered"});
+    state.pieces.push({piece_id: "piece-1", plan_subject: "plan", style_subject: "style", status: "rendered", components: {evidence: "valid", capture: "valid", script: "valid", voice: "valid", brand: "valid", composition: "valid", render: "valid", qa: "missing", distribution: "missing"}, invalidations: []});
     state.costs = {currency: "USD", approved_limit: 20, known_total: 4};
     state.jobs.push({job_id: "job-1", provider: "synthetic-provider", provider_job_id: "provider-1", operation: "voice", request_hash: hashA, status: "uncertain", attempts: 1, known_cost: 4});
     const approved = addApproval(state, {approval_id: "approval-1", kind: "plan", scope: "plan-main", confirmed_by: "owner", confirmed_at: state.updated_at, subject_version: 1, subject_hash: hashA, explicit_method: "file", status: "approved"});

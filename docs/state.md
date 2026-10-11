@@ -10,6 +10,8 @@ The JSON records:
 - costs and provider jobs, including uncertain jobs that must be queried before retry;
 - appendable audit events and a monotonic `state_revision`.
 
+`versions` stores the current scope, version, hash, and covered piece IDs for plan/style subjects. Production derives its approval checks from those persisted subjects; callers cannot select an older approved hash or substitute another approval kind.
+
 `ready` never means `published`. Publication records are modeled separately in the distribution milestone.
 
 ## Concurrency and recovery
@@ -26,4 +28,10 @@ npm run state -- show /path/to/consumer
 ```
 
 `init` is exclusive. Run `show` or load the existing state to resume; never initialize again to reset an engagement.
+
+## Transition and invalidation rules
+
+Engagement transitions follow the documented phase graph. A pilot requires a current plan approval and explicit pieces contained by that plan. Production requires an explicit batch, current plan approval, and current style approval covering every selected piece.
+
+Material changes mark only selected piece components stale. Title changes preserve capture and voice. UI, role, and journey changes invalidate evidence and its media derivatives. Brand or voice changes also remove only the affected current style subjects, while historical approvals remain as audit evidence. `ready` remains separate from publication.
 

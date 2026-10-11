@@ -12,7 +12,17 @@
     "engagement_phase": {"enum": ["discovered", "interviewing", "brief_draft", "plan_draft", "awaiting_plan_approval", "pilot_in_progress", "awaiting_style_approval", "producing", "reviewing", "ready", "blocked"]},
     "versions": {
       "type": "object",
-      "additionalProperties": {"type": "integer", "minimum": 1}
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scope", "version", "hash", "piece_ids"],
+        "properties": {
+          "scope": {"type": "string", "minLength": 1},
+          "version": {"type": "integer", "minimum": 1},
+          "hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+          "piece_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+        }
+      }
     },
     "decisions": {
       "type": "array",
@@ -53,10 +63,42 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["piece_id", "status"],
+        "required": ["piece_id", "plan_subject", "style_subject", "status", "components", "invalidations"],
         "properties": {
           "piece_id": {"type": "string", "minLength": 1},
-          "status": {"enum": ["draft", "evidence_ready", "captured", "scripted", "composed", "rendered", "verified", "ready", "stale", "failed"]}
+          "plan_subject": {"type": "string", "minLength": 1},
+          "style_subject": {"type": "string", "minLength": 1},
+          "status": {"enum": ["draft", "evidence_ready", "captured", "scripted", "composed", "rendered", "verified", "ready", "stale", "failed"]},
+          "components": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["evidence", "capture", "script", "voice", "brand", "composition", "render", "qa", "distribution"],
+            "properties": {
+              "evidence": {"enum": ["missing", "valid", "stale", "failed"]},
+              "capture": {"enum": ["missing", "valid", "stale", "failed"]},
+              "script": {"enum": ["missing", "valid", "stale", "failed"]},
+              "voice": {"enum": ["missing", "valid", "stale", "failed"]},
+              "brand": {"enum": ["missing", "valid", "stale", "failed"]},
+              "composition": {"enum": ["missing", "valid", "stale", "failed"]},
+              "render": {"enum": ["missing", "valid", "stale", "failed"]},
+              "qa": {"enum": ["missing", "valid", "stale", "failed"]},
+              "distribution": {"enum": ["missing", "valid", "stale", "failed"]}
+            }
+          },
+          "invalidations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["change_id", "change_type", "components", "recorded_at"],
+              "properties": {
+                "change_id": {"type": "string", "minLength": 1},
+                "change_type": {"enum": ["title", "ui", "role", "journey", "brand", "voice"]},
+                "components": {"type": "array", "items": {"enum": ["evidence", "capture", "script", "voice", "brand", "composition", "render", "qa", "distribution"]}, "minItems": 1, "uniqueItems": true},
+                "recorded_at": {"type": "string", "minLength": 1}
+              }
+            }
+          }
         }
       }
     },
