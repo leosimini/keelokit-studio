@@ -101,3 +101,18 @@ test("music fades in and out and ducks under narration", () => {
   assert.ok(ramp < 0.4 && ramp > 0.1, "ducking ramps in before narration starts");
   approx(musicVolume({...music, windows: [], frame: 150}), 0.4);
 });
+
+import {pacingWarnings} from "../src/render/geometry.mjs";
+
+test("warns when a scene is too short to read or mostly silent, and stays quiet otherwise", () => {
+  const scene = (id, seconds, text, subtitle = "") => ({scene_id: id, start_seconds: 0, end_seconds: seconds, on_screen_text: text, subtitle});
+  assert.deepEqual(pacingWarnings({scenes: [scene("a", 4, "Open the board"), scene("b", 3, "Assign the job")]}), []);
+  const short = pacingWarnings({scenes: [scene("a", 1, "Pick a technician from the list and confirm the assignment")]});
+  assert.equal(short[0].code, "too-short-to-read");
+  assert.ok(short[0].needed_seconds > 1);
+  assert.equal(pacingWarnings({scenes: [scene("a", 1.2, "", "A caption that is much too long for this very short scene indeed")]})[0].code, "too-short-to-read");
+  assert.deepEqual(pacingWarnings({scenes: [scene("a", 1.2, "", "A caption that is much too long for this very short scene indeed")], narrationSeconds: {a: 1.2}}), [], "captions that follow narration are read as they are spoken");
+  const silent = pacingWarnings({scenes: [scene("a", 10, "Wait for it")], narrationSeconds: {a: 2}});
+  assert.equal(silent[0].code, "mostly-silent");
+  assert.equal(pacingWarnings({scenes: [scene("a", 10, "Wait for it")], narrationSeconds: {a: 6}}).length, 0);
+});

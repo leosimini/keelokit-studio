@@ -167,3 +167,23 @@ export function activeCue(cues, frame) {
   for (const cue of cues) if (frame >= cue.from_frame) active = cue;
   return active;
 }
+
+const wordCount = (text) => {
+  const trimmed = (text ?? "").trim();
+  if (trimmed === "") return 0;
+  const words = trimmed.split(/\s+/).length;
+  return words === 1 && trimmed.length > 12 ? Math.ceil(trimmed.length / 5) : words;
+};
+
+// Non-blocking pacing notes: a scene too short to read its text, or a long scene with little to hear.
+export function pacingWarnings({scenes, narrationSeconds = {}}) {
+  const warnings = [];
+  for (const scene of scenes) {
+    const seconds = scene.end_seconds - scene.start_seconds;
+    const onScreen = scene.on_screen_text ? 0.8 + wordCount(scene.on_screen_text) / 3.3 : 0;
+    const needed = Math.max(onScreen, scene.subtitle && !Object.hasOwn(narrationSeconds, scene.scene_id) ? 0.5 + wordCount(scene.subtitle) / 3.8 : 0);
+    if (needed > seconds) warnings.push({scene_id: scene.scene_id, code: "too-short-to-read", scene_seconds: Number(seconds.toFixed(2)), needed_seconds: Number(needed.toFixed(2))});
+    if (Object.hasOwn(narrationSeconds, scene.scene_id) && seconds > 4 && narrationSeconds[scene.scene_id] < seconds * 0.35) warnings.push({scene_id: scene.scene_id, code: "mostly-silent", scene_seconds: Number(seconds.toFixed(2)), narration_seconds: Number(narrationSeconds[scene.scene_id].toFixed(2))});
+  }
+  return warnings;
+}

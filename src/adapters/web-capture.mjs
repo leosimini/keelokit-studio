@@ -48,8 +48,8 @@ function configuredOrigins(baseUrl, allowedOrigins) {
   return {base, origins};
 }
 
-function contextHash({build, commit, procedureHash, role, locale, flags, viewport, demoDataId, allowedOrigins}) {
-  return createHash("sha256").update(JSON.stringify({build, commit, procedureHash, role, locale, flags: [...flags].sort(), viewport, demoDataId, allowedOrigins: [...allowedOrigins].sort()})).digest("hex");
+function contextHash({build, commit, procedureHash, role, locale, flags, viewport, deviceScaleFactor, demoDataId, allowedOrigins}) {
+  return createHash("sha256").update(JSON.stringify({build, commit, procedureHash, role, locale, flags: [...flags].sort(), viewport, deviceScaleFactor, demoDataId, allowedOrigins: [...allowedOrigins].sort()})).digest("hex");
 }
 
 async function assertText(page, assertion, failureMessage, timeout) {
@@ -91,17 +91,18 @@ async function storeScreenshot({page, projectRoot, outputDirectory, captureId, s
   return storeCaptureBytes({projectRoot, outputDirectory, captureId, suffix, content: await page.screenshot({fullPage: true})});
 }
 
-export async function captureWebJourney({projectRoot, projectId, baseUrl, allowedOrigins = [], executablePath, browserType = chromium, journey, role, availability = "available", flags = [], build, commit = null, locale, viewport = {width: 1280, height: 720}, actionTimeoutMs = 10000, demoDataId, outputDirectory = "media/studio/captures", allowedClaims = []}) {
+export async function captureWebJourney({projectRoot, projectId, baseUrl, allowedOrigins = [], executablePath, browserType = chromium, journey, role, availability = "available", flags = [], build, commit = null, locale, viewport = {width: 1280, height: 720}, deviceScaleFactor = 2, actionTimeoutMs = 10000, demoDataId, outputDirectory = "media/studio/captures", allowedClaims = []}) {
   validateJourney(journey, role);
   if (!Array.isArray(flags) || !Array.isArray(allowedClaims)) throw new TypeError("flags and allowedClaims must be arrays");
   if (!Number.isInteger(actionTimeoutMs) || actionTimeoutMs < 1) throw new TypeError("actionTimeoutMs must be a positive integer");
+  if (![1, 2, 3].includes(deviceScaleFactor)) throw new TypeError("deviceScaleFactor must be 1, 2 or 3; captures are used for camera zoom, so 2 is the default");
   if (typeof demoDataId !== "string" || demoDataId.length === 0) throw new TypeError("demoDataId is required and must identify the non-secret demo dataset");
   const {base, origins} = configuredOrigins(baseUrl, allowedOrigins);
   // Step values may be credentials: they must never be recoverable from the stored hash.
   const hashedJourney = {...journey, steps: journey.steps.map((step) => step.value === undefined ? step : {...step, value: "[value-not-hashed]"})};
   const procedureHash = stableId("procedure", {journey: hashedJourney, allowedOrigins: [...origins].sort(), actionTimeoutMs});
-  const captureId = stableId("capture", {projectId, procedureHash, role, build, commit, locale, flags: [...flags].sort(), viewport, demoDataId});
-  const hash = `capture-context:${contextHash({build, commit, procedureHash, role, locale, flags, viewport, demoDataId, allowedOrigins: origins})}`;
+  const captureId = stableId("capture", {projectId, procedureHash, role, build, commit, locale, flags: [...flags].sort(), viewport, deviceScaleFactor, demoDataId});
+  const hash = `capture-context:${contextHash({build, commit, procedureHash, role, locale, flags, viewport, deviceScaleFactor, demoDataId, allowedOrigins: origins})}`;
 
   if (availability !== "available") {
     const evidence = createEvidenceRecord({projectId, featureOrJourney: journey.name, procedureHash, surface: "web", adapter: "playwright-web", verification: "configured-unavailable", role, availability, flags, build, commit, locale, steps: ["Capture skipped because the configured feature state is unavailable"], result: `Feature ${availability}; no web journey was represented as successful.`, hashes: [hash], allowedClaims: []});
@@ -120,7 +121,7 @@ export async function captureWebJourney({projectRoot, projectId, baseUrl, allowe
     let page;
     const blockedOrigins = new Set();
     try {
-      context = await browser.newContext({locale, viewport, serviceWorkers: "block"});
+      context = await browser.newContext({locale, viewport, deviceScaleFactor, serviceWorkers: "block"});
       context.setDefaultTimeout(actionTimeoutMs);
       context.setDefaultNavigationTimeout(actionTimeoutMs);
       await context.routeWebSocket(/.*/, (socket) => {

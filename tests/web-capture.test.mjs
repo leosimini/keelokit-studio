@@ -324,3 +324,21 @@ test("blocks WebSocket connections to origins outside the allowlist and does not
     await new Promise((resolveClose) => app.close(resolveClose));
   }
 });
+
+test("captures at twice the viewport resolution by default so camera zoom stays sharp", async () => {
+  const {imageDimensions} = await import("../src/render/geometry.mjs");
+  const projectRoot = await mkdtemp(resolve(tmpdir(), "keelokit-studio-web-"));
+  try {
+    await withFixture(async (baseUrl) => {
+      const standard = await captureWebJourney(options(projectRoot, baseUrl));
+      assert.equal(standard.status, "captured");
+      assert.deepEqual(imageDimensions(await readFile(resolve(projectRoot, standard.captures[0])), "image/png"), {width: 2560, height: 1440});
+      const single = await captureWebJourney({...options(projectRoot, baseUrl), deviceScaleFactor: 1});
+      assert.deepEqual(imageDimensions(await readFile(resolve(projectRoot, single.captures[0])), "image/png"), {width: 1280, height: 720});
+      assert.notEqual(standard.evidence.evidence_id, single.evidence.evidence_id, "a different capture resolution is different evidence");
+      await assert.rejects(() => captureWebJourney({...options(projectRoot, baseUrl), deviceScaleFactor: 4}), /deviceScaleFactor/);
+    });
+  } finally {
+    await rm(projectRoot, {recursive: true, force: true});
+  }
+});

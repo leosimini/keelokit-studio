@@ -352,3 +352,11 @@ test("a reduced-motion render freezes the camera and drops transitions, and is a
   assert.deepEqual([calm.inputProps.scenes[0].motion.entrance, calm.inputProps.scenes[0].motion.exit, calm.inputProps.scenes[0].motion.emphasis], ["cut", "cut", "none"]);
   assert.throws(() => prepareRemotionRender({...options, motionSpec: moving, renderConfig: {...options.renderConfig, reduced_motion: "yes"}}), /reduced_motion/);
 });
+
+test("the render manifest carries pacing warnings without blocking the render", () => {
+  const options = videoCase("en-US");
+  const rushed = {...options.storyboard, scenes: [{...options.storyboard.scenes[0], on_screen_text: "Pick a technician from the list and confirm the assignment right now"}]};
+  assert.deepEqual(prepareRemotionRender({...options, storyboard: rushed, motionSpec: null}).manifest.warnings.map(({code}) => code), ["too-short-to-read"]);
+  const calm = {...options.storyboard, duration_seconds: 3, scenes: [{...options.storyboard.scenes[0], end_seconds: 3}]};
+  assert.deepEqual(prepareRemotionRender({...options, storyboard: calm, motionSpec: null}).manifest.warnings, []);
+});

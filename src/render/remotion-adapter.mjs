@@ -8,7 +8,7 @@ import {resolve} from "node:path";
 import {promisify} from "node:util";
 import {createAssetInventory} from "../assets/inventory.mjs";
 import {contentHash, stableId} from "../core/ids.mjs";
-import {imageDimensions} from "./geometry.mjs";
+import {imageDimensions, pacingWarnings} from "./geometry.mjs";
 import {AudioBindingError, prepareAudio, sceneCaptions} from "./audio.mjs";
 import {assertMotionSpecCurrent, reduceMotion} from "../agency/motion.mjs";
 import {assertProductionHandoffs} from "../agency/production-flow.mjs";
@@ -231,6 +231,7 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
     evidence_ids: selectedEvidence,
     evidence_hashes: evidenceHashes,
     configuration: {width: renderConfig.width, height: renderConfig.height, fps: storyboard.fps, duration_in_frames: inputProps.duration_in_frames, motion_spec_id: motionSpec?.motion_spec_id ?? null, reduced_motion: reducedMotion, ...audioPlan.summary, subtitled_scene_ids: scenes.filter(({subtitle}) => subtitle !== "").map(({scene_id}) => scene_id)},
+    warnings: pacingWarnings({scenes: scenes.map((scene) => ({scene_id: scene.scene_id, start_seconds: scene.start_seconds, end_seconds: scene.end_seconds, on_screen_text: scene.on_screen_text, subtitle: scene.subtitle})), narrationSeconds: Object.fromEntries(audioPlan.audio.narration.map(({scene_id, duration_frames}) => [scene_id, duration_frames / storyboard.fps]))}),
     qa_status: "not-reviewed"
   };
   return {inputProps, manifest};
