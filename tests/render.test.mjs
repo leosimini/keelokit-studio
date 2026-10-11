@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import test from "node:test";
-import {prepareRemotionRender, remotionRenderCapability, renderRemotionPreview, RenderAdapterError} from "../src/render/remotion-adapter.mjs";
+import {prepareRemotionRender, remotionRenderCapability, renderRemotionPreview, renderRemotionVideo, RenderAdapterError} from "../src/render/remotion-adapter.mjs";
+import {createMotionSpec} from "../src/agency/motion.mjs";
 
 const image = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64");
 const sha256 = createHash("sha256").update(image).digest("hex");
@@ -81,4 +82,15 @@ test("renders a real in-memory PNG preview without claiming QA", {timeout: 12000
   assert.ok(result.artifact.bytes.length > 1000);
   assert.match(result.artifact.sha256, /^[a-f0-9]{64}$/);
   assert.equal(result.manifest.qa_status, "not-reviewed");
+});
+
+test("renders a real timed MP4 from an explicit motion specification", {timeout: 120000}, async (context) => {
+  const capability = await remotionRenderCapability({browserExecutable: "/usr/bin/chromium"});
+  if (capability.status !== "available") return context.skip(capability.reason);
+  const versionedStoryboard = {...storyboard, storyboard_id: "storyboard-preview", version: 1, plan_id: "plan-preview", plan_version: 1, plan_hash: `sha256:${"d".repeat(64)}`, plan_scope: "plan-main", intent_type: "explainer", message: "Operators can complete the task.", language: "en-US", structure: ["promise"], evidence_ids: ["evidence-task"], preconditions: [], steps: [], structure_justification: "Single-scene render adapter test", evidence_target: {feature_or_journey: "Complete task", surface: "web", role: "operator", build: "fixture-1", commit: null, locale: "en-US", flags: [], availability: "available"}, scenes: [{...storyboard.scenes[0], section: "promise", step: null, claims: [{claim: "Operators can complete the task.", evidence_id: "evidence-task"}]}]};
+  const motionSpec = createMotionSpec({storyboard: versionedStoryboard, version: 1, rationale: "Use restrained motion to reveal the verified task", scenes: [{scene_id: "scene-task", entrance: "fade", entrance_frames: 5, emphasis: "focus", exit: "fade", exit_frames: 5, focus: "task result", purpose: "Reveal and then clear the verified result"}]});
+  const result = await renderRemotionVideo({...input({storyboard: versionedStoryboard}), motionSpec, browserExecutable: "/usr/bin/chromium"});
+  assert.equal(result.artifact.content_type, "video/mp4");
+  assert.ok(result.artifact.bytes.length > 1000);
+  assert.equal(result.manifest.configuration.motion_spec_id, motionSpec.motion_spec_id);
 });

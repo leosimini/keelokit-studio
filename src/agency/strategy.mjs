@@ -1,6 +1,7 @@
 import {contentHash, stableId} from "../core/ids.mjs";
 import {reviewSubject} from "./review.mjs";
 import {selectRecipes} from "./recipes.mjs";
+import {assertPerformanceObservation} from "./performance.mjs";
 
 const confidenceValue = {low: 0, medium: 1, high: 2};
 const sha = /^sha256:[a-f0-9]{64}$/;
@@ -34,6 +35,11 @@ export function createContentStrategy({projectId, version, plan, audiences, plan
   const sources = new Map(sourceObservations.sources.map((source) => [source.source_id, source]));
   const evidenceById = new Map(evidence.evidence.map((record) => [record.evidence_id, record]));
   const observationById = new Map(observations.map((record) => [record.observation_id, record]));
+  if (observationById.size !== observations.length) throw new StrategyError("Performance observation IDs must be unique");
+  for (const observation of observations) {
+    try { assertPerformanceObservation(observation); } catch (error) { throw new StrategyError(error.message); }
+    if (observation.project_id !== projectId || !pieces.has(observation.piece_id)) throw new StrategyError("Performance observation belongs to another project or piece");
+  }
   if (!Array.isArray(candidates) || candidates.length === 0) throw new StrategyError("At least one strategy candidate is required");
   const built = candidates.map((candidate) => {
     const planned = pieces.get(candidate.piece_id);
@@ -55,7 +61,11 @@ export function createContentStrategy({projectId, version, plan, audiences, plan
     score(hypothesis?.objective_fit, "objective_fit"); score(hypothesis?.expected_impact, "expected_impact");
     if (!Object.hasOwn(confidenceValue, hypothesis?.confidence)) throw new StrategyError("confidence must be low, medium or high");
     strings(hypothesis.assumptions, "assumptions"); strings(hypothesis.unknowns, "unknowns");
-    for (const id of hypothesis.observation_ids) if (!observationById.has(id)) throw new StrategyError(`Unknown performance observation ${id}`);
+    for (const id of hypothesis.observation_ids) {
+      const observation = observationById.get(id);
+      if (!observation) throw new StrategyError(`Unknown performance observation ${id}`);
+      if (observation.piece_id !== candidate.piece_id || observation.channel !== candidate.channel) throw new StrategyError(`Performance observation ${id} does not match candidate piece and channel`);
+    }
     if (candidate.effort?.estimated_minutes !== null && (!Number.isFinite(candidate.effort?.estimated_minutes) || candidate.effort.estimated_minutes < 0)) throw new StrategyError("Estimated effort must be non-negative or null");
     text(candidate.effort?.basis, "effort.basis"); strings(candidate.declared_blockers, "declared_blockers");
     if (!Array.isArray(candidate.alternatives)) throw new StrategyError("alternatives must be explicit");

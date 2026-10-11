@@ -1,5 +1,5 @@
 import React from "react";
-import {AbsoluteFill, cancelRender, continueRender, delayRender, Sequence} from "remotion";
+import {AbsoluteFill, cancelRender, continueRender, delayRender, interpolate, Sequence, useCurrentFrame} from "remotion";
 import {BrowserFrame, CursorHighlight, EndCard, FeatureCallout, PhoneFrame, ResultCard, StepLabel, SubtitleTrack, TitleCard} from "./components.mjs";
 
 const h = React.createElement;
@@ -19,6 +19,7 @@ function PinnedFont({src}) {
 }
 
 function Scene({scene, theme, assetSources, logoSrc}) {
+  const frame = useCurrentFrame();
   const src = scene.asset_ids.length > 0 ? assetSources[scene.asset_ids[0]] : null;
   let content;
   if (scene.component === "title") content = h(TitleCard, {text: scene.on_screen_text, theme});
@@ -27,7 +28,13 @@ function Scene({scene, theme, assetSources, logoSrc}) {
   else if (scene.component === "result") content = h(ResultCard, {text: scene.on_screen_text, theme});
   else if (scene.component === "end") content = h(EndCard, {text: scene.on_screen_text, logoSrc, theme});
   else content = h(AbsoluteFill, {style: {backgroundColor: theme.background}}, src ? h(BrowserFrame, {src, text: null, theme}) : null, h(FeatureCallout, {text: scene.on_screen_text, theme}));
-  return h(AbsoluteFill, null, content, scene.highlight ? h(CursorHighlight, {...scene.highlight, theme}) : null, scene.step_label ? h(StepLabel, {text: scene.step_label, theme}) : null, scene.subtitle ? h(SubtitleTrack, {text: scene.subtitle, theme}) : null);
+  const motion = scene.motion;
+  const enter = motion.entrance_frames === 0 ? 1 : interpolate(frame, [0, motion.entrance_frames], [0, 1], {extrapolateLeft: "clamp", extrapolateRight: "clamp"});
+  const exitStart = scene.duration_frames - motion.exit_frames;
+  const leave = motion.exit_frames === 0 ? 1 : interpolate(frame, [exitStart, scene.duration_frames - 1], [1, 0], {extrapolateLeft: "clamp", extrapolateRight: "clamp"});
+  const opacity = (motion.entrance === "fade" ? enter : 1) * (motion.exit === "fade" ? leave : 1);
+  const transform = motion.entrance === "slide-up" ? `translateY(${(1 - enter) * 36}px)` : motion.entrance === "scale" ? `scale(${0.94 + enter * 0.06})` : motion.emphasis === "pulse" ? `scale(${1 + Math.sin(frame / 4) * 0.01})` : "none";
+  return h(AbsoluteFill, {style: {opacity, transform}}, content, scene.highlight ? h(CursorHighlight, {...scene.highlight, theme}) : null, scene.step_label ? h(StepLabel, {text: scene.step_label, theme}) : null, scene.subtitle ? h(SubtitleTrack, {text: scene.subtitle, theme}) : null);
 }
 
 export function StudioComposition({scenes, theme, asset_sources: assetSources, logo_src: logoSrc}) {

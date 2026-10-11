@@ -8,6 +8,7 @@ import {resolve} from "node:path";
 import {promisify} from "node:util";
 import {createAssetInventory} from "../assets/inventory.mjs";
 import {stableId} from "../core/ids.mjs";
+import {assertMotionSpecCurrent} from "../agency/motion.mjs";
 
 const [brandSchema, storyboardSchema, evidenceSchema] = await Promise.all([
   readFile(resolve(import.meta.dirname, "../../schemas/v1/brand.schema.json"), "utf8").then(JSON.parse),
@@ -93,7 +94,7 @@ export async function remotionRenderCapability({browserExecutable}) {
   }
 }
 
-export function prepareRemotionRender({storyboard, brand, assets, evidence, assetSources, renderConfig}) {
+export function prepareRemotionRender({storyboard, brand, assets, evidence, assetSources, renderConfig, motionSpec = null}) {
   if (!validateStoryboard(storyboard)) throw new RenderAdapterError(errors("storyboard.json", validateStoryboard));
   if (!validateBrand(brand)) throw new RenderAdapterError(errors("brand.json", validateBrand));
   if (!assets || assets.schema_version !== 1) throw new RenderAdapterError("assets.json must be a versioned asset inventory");
@@ -109,6 +110,8 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
   const {sources: sourceMap, mediaTypes} = verifiedDataSources(inventory, assetSources);
   const assetsById = new Map(inventory.assets.map((asset) => [asset.asset_id, asset]));
   const sceneIds = storyboard.scenes.map(({scene_id}) => scene_id);
+  if (motionSpec !== null) assertMotionSpecCurrent(motionSpec, storyboard);
+  const motionByScene = new Map((motionSpec?.scenes ?? []).map((scene) => [scene.scene_id, scene]));
   if (new Set(sceneIds).size !== sceneIds.length) throw new RenderAdapterError("Storyboard scene_id values must be unique");
   const orderedScenes = [...storyboard.scenes].sort((left, right) => left.start_seconds - right.start_seconds);
   for (let index = 0; index < orderedScenes.length; index += 1) {
@@ -149,6 +152,7 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
       subtitle: Object.hasOwn(subtitles, scene.scene_id) ? subtitles[scene.scene_id] : "",
       step_label: Object.hasOwn(stepLabels, scene.scene_id) ? stepLabels[scene.scene_id] : null,
       highlight: Object.hasOwn(highlights, scene.scene_id) ? highlights[scene.scene_id] : null
+      ,motion: motionByScene.get(scene.scene_id) ?? {entrance: "cut", entrance_frames: 0, emphasis: "none", exit: "cut", exit_frames: 0, focus: null, purpose: "Static compatibility render"}
     };
   });
   if (scenes.some(({duration_frames}) => duration_frames < 1)) throw new RenderAdapterError("Every scene must occupy at least one frame");
@@ -182,17 +186,34 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
     piece_id: storyboard.piece_id,
     adapter: "remotion",
     engine_version: "4.0.534",
-    render_id: stableId("render", {storyboard, brand, assetHashes, assetRecordHashes, evidenceHashes, renderConfig}),
+    render_id: stableId("render", {storyboard, brand, assetHashes, assetRecordHashes, evidenceHashes, renderConfig, motionSpec}),
     brand: {brand_id: brand.brand_id, version: brand.version, confirmation_status: brand.confirmation_status, record_hash: brandHash},
     assets: assetHashes,
     asset_record_hashes: assetRecordHashes,
     asset_states: assetStates,
     evidence_ids: selectedEvidence,
     evidence_hashes: evidenceHashes,
-    configuration: {width: renderConfig.width, height: renderConfig.height, fps: storyboard.fps, duration_in_frames: inputProps.duration_in_frames},
+    configuration: {width: renderConfig.width, height: renderConfig.height, fps: storyboard.fps, duration_in_frames: inputProps.duration_in_frames, motion_spec_id: motionSpec?.motion_spec_id ?? null},
     qa_status: "not-reviewed"
   };
   return {inputProps, manifest};
+}
+
+export async function renderRemotionVideo(options) {
+  if (!options.motionSpec) throw new RenderAdapterError("Timed video export requires an exact motion specification", "motion_required");
+  const capability = await remotionRenderCapability({browserExecutable: options.browserExecutable});
+  if (capability.status !== "available") throw new RenderAdapterError(capability.reason, "render_capability_unavailable");
+  const prepared = prepareRemotionRender(options);
+  const bundleDirectory = await mkdtemp(resolve(tmpdir(), "keelokit-studio-video-"));
+  const output = resolve(bundleDirectory, "piece.mp4");
+  try {
+    const [{bundle}, {renderMedia, selectComposition}] = await Promise.all([import("@remotion/bundler"), import("@remotion/renderer")]);
+    const serveUrl = await bundle({entryPoint: resolve(import.meta.dirname, "entry.mjs"), outDir: resolve(bundleDirectory, "bundle"), logLevel: "error"});
+    const composition = await selectComposition({serveUrl, id: "KeelokitStudioPiece", inputProps: prepared.inputProps, browserExecutable: options.browserExecutable, logLevel: "error"});
+    await renderMedia({serveUrl, composition, inputProps: prepared.inputProps, browserExecutable: options.browserExecutable, codec: "h264", outputLocation: output, logLevel: "error"});
+    const bytes = await readFile(output);
+    return {...prepared, artifact: {kind: "video", content_type: "video/mp4", bytes, sha256: createHash("sha256").update(bytes).digest("hex"), duration_seconds: options.storyboard.duration_seconds}};
+  } finally { await rm(bundleDirectory, {recursive: true, force: true}); }
 }
 
 export async function renderRemotionPreview(options) {
