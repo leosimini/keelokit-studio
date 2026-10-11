@@ -9,3 +9,5 @@ The capture role is an execution fact, not a marketing audience. Evidence gather
 `evaluateEvidenceRequest` receives only selected evidence IDs. Its target describes the current production context with `feature_or_journey`, `surface`, `role`, `build`, optional `commit`, `locale`, `availability`, and the complete enabled `flags` set. It returns `ready` only when every selected record is compatible and every requested claim appears verbatim in that record's `allowed_claims`.
 
 Disabled, failed, and unknown outcomes are preserved as evidence but cannot carry production claims. Missing or incompatible records produce explicit blockers; Studio does not search for an unrequested substitute or fabricate a successful result.
+
+Contributed files receive a streamed content hash plus a separate provenance record. Missing role/build/locale remains `null` in that record; the linked evidence is `unknown` and `provenance-limited`, with no allowed production claims. Contributor-reported claims remain separate. C03-04 records the source file in place; durable asset copying and dependency inventory belong to C03-05.

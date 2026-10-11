@@ -1,6 +1,6 @@
 # C03-04 — Ingest contributed material
 
-Status: pending
+Status: verified
 
 - Requirements: ST-009, ST-015
 - Evaluations: EV-009

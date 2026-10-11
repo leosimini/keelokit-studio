@@ -25,7 +25,7 @@ C03 — identity, evidence, and capture.
 | C03-01 | verified | sourced brand candidates, explicit conflicts/gaps, versioned confirmation state, and a standalone escaped HTML reference pass independent review |
 | C03-02 | verified | selected evidence and claims are mechanically gated by journey, role, build/commit, locale, complete flag state, and availability |
 | C03-03 | verified | Playwright runs origin-allowlisted, role-asserted journeys and preserves content-addressed success/failure evidence without leaking step values |
-| C03-04 | pending | contributed-material ingest with provenance limits |
+| C03-04 | verified | contributed files retain source, hash, nullable context, reported claims and explicit verification limits without becoming live claims |
 | C03-05 | pending | project-local assets, hashes, and dependency tracking |
 
 ## Verification ledger
@@ -62,6 +62,8 @@ C03 — identity, evidence, and capture.
 - Independent C03-02 review reproduced incomplete flag matching, current-availability and array-input fail-open behavior; all were fixed and the reviewer confirmed 87/87 tests with no remaining P1/P2 findings.
 - `node --test tests/web-capture.test.mjs`: pass; real Chromium covers verified and async outcomes, disabled/failing journeys, request/redirect allowlists, sanitized secrets, role revalidation, stable procedure identity, content-addressed history, lifecycle closure, selector semantics, and capability probing.
 - Independent C03-03 review reproduced secret leakage, pre-block redirects, identity overwrites, capability overclaims, browser leaks, role drift, recapture overwrites, async false failures, selector regressions, and portability gaps; all were regression-tested and the reviewer confirmed no remaining P1/P2 findings.
+- `node --test tests/provided-material.test.mjs`: pass; covers complete and absent provenance, content-bound identities, invalid verification metadata, traversal, non-files, and non-blocking FIFO rejection.
+- Independent C03-04 review reproduced parent-directory, descriptor, and logical-alias replacement races plus blocking FIFO and provenance-validation defects; all were fixed and the reviewer confirmed 107/107 tests with no remaining P1/P2 findings.
 - Narrative/prompt research was assessed as non-authoritative design evidence. Mechanical evidence gates are queued for C03; selector/composer/reviewer work remains owned by C04 and is not described as model-validated.
 
 ## Blockers and limits
@@ -72,5 +74,5 @@ C03 — identity, evidence, and capture.
 
 ## Next
 
-Implement C03-04 contributed-material ingestion with explicit provenance and verification limits.
+Implement C03-05 project-local asset persistence, hashes, dependencies, and selective invalidation.
 
