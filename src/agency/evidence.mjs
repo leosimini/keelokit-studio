@@ -5,6 +5,12 @@ import {stableId} from "../core/ids.mjs";
 
 const schema = JSON.parse(await readFile(resolve(import.meta.dirname, "../../schemas/v1/product-evidence.schema.json"), "utf8"));
 const validate = new Ajv2020({allErrors: true, strict: true}).compile(schema);
+const adapterCapabilities = new Map([
+  ["playwright-web", {surface: "web", verifications: new Set(["live-capture", "configured-unavailable"])}],
+  ["cli", {surface: "cli", verifications: new Set(["reproducible-request"])}],
+  ["api", {surface: "api", verifications: new Set(["reproducible-request"])}],
+  ["provided-material", {surface: "provided-material", verifications: new Set(["provenance-limited"])}]
+]);
 
 export class EvidenceValidationError extends Error {
   constructor(errors) {
@@ -23,18 +29,30 @@ export function validateEvidenceDocument(document) {
   if (!validate(document)) errors.push(...(validate.errors ?? []).map((error) => `product-evidence.json${error.instancePath || "/"}: ${error.message}`));
   if (errors.length === 0) {
     for (const duplicate of duplicates(document.evidence.map(({evidence_id}) => evidence_id))) errors.push(`product-evidence.json: duplicate evidence_id ${duplicate}`);
+    for (const evidence of document.evidence) {
+      const capability = adapterCapabilities.get(evidence.adapter);
+      if (!capability) errors.push(`product-evidence.json: unknown evidence adapter ${evidence.adapter}`);
+      else {
+        if (capability.surface !== evidence.surface) errors.push(`product-evidence.json: adapter ${evidence.adapter} cannot verify ${evidence.surface}`);
+        if (!capability.verifications.has(evidence.verification)) errors.push(`product-evidence.json: adapter ${evidence.adapter} cannot provide ${evidence.verification}`);
+      }
+    }
   }
   if (errors.length > 0) throw new EvidenceValidationError(errors);
   return document;
 }
 
-export function createEvidenceRecord({projectId, featureOrJourney, role, availability, flags = [], build, commit = null, locale, steps, result, capturePaths = [], hashes, allowedClaims = []}) {
+export function createEvidenceRecord({projectId, featureOrJourney, procedureHash, surface, adapter, verification, role, availability, flags = [], build, commit = null, locale, steps, result, capturePaths = [], hashes, allowedClaims = []}) {
   for (const [name, value] of [["flags", flags], ["steps", steps], ["capturePaths", capturePaths], ["hashes", hashes], ["allowedClaims", allowedClaims]]) {
     if (!Array.isArray(value)) throw new TypeError(`${name} must be an array`);
   }
   const record = {
-    evidence_id: stableId("evidence", {projectId, featureOrJourney, role, build, commit, locale, flags: [...flags].sort()}),
+    evidence_id: stableId("evidence", {projectId, featureOrJourney, procedureHash, surface, adapter, role, availability, build, commit, locale, flags: [...flags].sort(), result, hashes: [...hashes].sort()}),
     feature_or_journey: featureOrJourney,
+    procedure_hash: procedureHash,
+    surface,
+    adapter,
+    verification,
     role,
     availability,
     flags: [...flags],
@@ -61,7 +79,7 @@ export function evaluateEvidenceRequest({document, evidenceIds, claims = [], tar
   if (evidenceIds.some((value) => typeof value !== "string" || value.length === 0)) throw new TypeError("evidenceIds must contain non-empty strings");
   if (!Array.isArray(claims)) throw new TypeError("claims must be an array");
   if (!target || typeof target !== "object") throw new TypeError("target is required");
-  for (const field of ["feature_or_journey", "role", "build", "locale"]) if (typeof target[field] !== "string" || target[field].length === 0) throw new TypeError(`target.${field} is required`);
+  for (const field of ["feature_or_journey", "surface", "role", "build", "locale"]) if (typeof target[field] !== "string" || target[field].length === 0) throw new TypeError(`target.${field} is required`);
   if (!Array.isArray(target.flags)) throw new TypeError("target.flags must be an array");
   if (target.flags.some((value) => typeof value !== "string" || value.length === 0) || new Set(target.flags).size !== target.flags.length) throw new TypeError("target.flags must contain unique non-empty strings");
   if (!["available", "disabled", "failed", "unknown"].includes(target.availability)) throw new TypeError("target.availability is invalid");
@@ -82,7 +100,7 @@ export function evaluateEvidenceRequest({document, evidenceIds, claims = [], tar
     }
     selected.push(evidence);
     if (evidence.availability !== "available") addBlocker(blockers, evidenceId, "feature_unavailable", "available", evidence.availability);
-    for (const [field, code] of [["feature_or_journey", "journey_mismatch"], ["role", "role_mismatch"], ["build", "build_mismatch"], ["locale", "locale_mismatch"]]) {
+    for (const [field, code] of [["feature_or_journey", "journey_mismatch"], ["surface", "surface_mismatch"], ["role", "role_mismatch"], ["build", "build_mismatch"], ["locale", "locale_mismatch"]]) {
       if (target[field] !== evidence[field]) addBlocker(blockers, evidenceId, code, target[field], evidence[field]);
     }
     if (Object.hasOwn(target, "commit") && target.commit !== evidence.commit) addBlocker(blockers, evidenceId, "commit_mismatch", target.commit, evidence.commit);

@@ -24,7 +24,7 @@ C03 — identity, evidence, and capture.
 | C02-06 | verified | start initializes once and resumes persisted decisions, approvals, renders, jobs, blockers, and material changes by active scope |
 | C03-01 | verified | sourced brand candidates, explicit conflicts/gaps, versioned confirmation state, and a standalone escaped HTML reference pass independent review |
 | C03-02 | verified | selected evidence and claims are mechanically gated by journey, role, build/commit, locale, complete flag state, and availability |
-| C03-03 | pending | repeatable web capture adapter and success/failure fixture |
+| C03-03 | verified | Playwright runs origin-allowlisted, role-asserted journeys and preserves content-addressed success/failure evidence without leaking step values |
 | C03-04 | pending | contributed-material ingest with provenance limits |
 | C03-05 | pending | project-local assets, hashes, and dependency tracking |
 
@@ -60,6 +60,8 @@ C03 — identity, evidence, and capture.
 - Independent C03-01 review reproduced lost usage conflicts and an incomplete reference sheet; both were fixed, regression-tested, and confirmed closed with no remaining P1/P2 findings.
 - `node --test tests/evidence.test.mjs`: pass; covers selected claim authorization, exact role/build/commit/locale/flags, unavailable outcomes, strict inputs, stable IDs, and immutable results.
 - Independent C03-02 review reproduced incomplete flag matching, current-availability and array-input fail-open behavior; all were fixed and the reviewer confirmed 87/87 tests with no remaining P1/P2 findings.
+- `node --test tests/web-capture.test.mjs`: pass; real Chromium covers verified and async outcomes, disabled/failing journeys, request/redirect allowlists, sanitized secrets, role revalidation, stable procedure identity, content-addressed history, lifecycle closure, selector semantics, and capability probing.
+- Independent C03-03 review reproduced secret leakage, pre-block redirects, identity overwrites, capability overclaims, browser leaks, role drift, recapture overwrites, async false failures, selector regressions, and portability gaps; all were regression-tested and the reviewer confirmed no remaining P1/P2 findings.
 - Narrative/prompt research was assessed as non-authoritative design evidence. Mechanical evidence gates are queued for C03; selector/composer/reviewer work remains owned by C04 and is not described as model-validated.
 
 ## Blockers and limits
@@ -70,5 +72,5 @@ C03 — identity, evidence, and capture.
 
 ## Next
 
-Implement C03-03 repeatable web capture with verified success and failure fixtures.
+Implement C03-04 contributed-material ingestion with explicit provenance and verification limits.
 

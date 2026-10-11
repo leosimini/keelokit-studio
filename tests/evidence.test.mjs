@@ -6,6 +6,10 @@ function record(overrides = {}) {
   return createEvidenceRecord({
     projectId: "sample-product",
     featureOrJourney: "Assign task",
+    procedureHash: "procedure-example",
+    surface: "web",
+    adapter: "playwright-web",
+    verification: "live-capture",
     role: "operator",
     availability: "available",
     flags: ["assign-enabled"],
@@ -26,6 +30,7 @@ function documentWith(evidence) {
 
 const target = {
   feature_or_journey: "Assign task",
+  surface: "web",
   role: "operator",
   build: "build-7",
   locale: "en-US",
@@ -67,6 +72,7 @@ test("evidence for one role, build, locale, or flag does not prove another", () 
   const evidence = record();
   for (const changed of [
     {role: "viewer"},
+    {surface: "native"},
     {build: "build-8"},
     {commit: "different-commit"},
     {locale: "es-AR"},
@@ -109,6 +115,20 @@ test("rejects duplicate evidence IDs and records without reproducibility hashes"
   assert.throws(() => validateEvidenceDocument(documentWith([evidence, evidence])), /duplicate evidence_id/);
   assert.throws(() => record({hashes: []}), EvidenceValidationError);
   for (const field of ["flags", "steps", "capturePaths", "hashes", "allowedClaims"]) assert.throws(() => record({[field]: "abc"}), new RegExp(`${field} must be an array`));
+});
+
+test("rejects adapter, surface, and verification combinations that overstate capability", () => {
+  assert.throws(() => record({surface: "native"}), /equal to constant|playwright-web cannot verify native/);
+  assert.throws(() => record({adapter: "unknown-adapter"}), /allowed values|unknown evidence adapter/);
+  assert.throws(() => record({verification: "configured-unavailable"}), EvidenceValidationError);
+});
+
+test("keeps CLI, API, and contributed-material evidence portable without implying UI", () => {
+  for (const [surface, verification] of [["cli", "reproducible-request"], ["api", "reproducible-request"], ["provided-material", "provenance-limited"]]) {
+    const evidence = record({surface, adapter: surface, verification});
+    assert.equal(evidence.surface, surface);
+    assert.equal(evidence.verification, verification);
+  }
 });
 
 test("requires an explicit available target and complete current flag set", () => {

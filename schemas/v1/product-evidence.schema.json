@@ -13,10 +13,14 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["evidence_id", "feature_or_journey", "role", "availability", "flags", "build", "locale", "steps", "result", "capture_paths", "hashes", "allowed_claims"],
+        "required": ["evidence_id", "feature_or_journey", "procedure_hash", "surface", "adapter", "verification", "role", "availability", "flags", "build", "locale", "steps", "result", "capture_paths", "hashes", "allowed_claims"],
         "properties": {
           "evidence_id": {"type": "string", "minLength": 1},
           "feature_or_journey": {"type": "string", "minLength": 1},
+          "procedure_hash": {"type": "string", "minLength": 1},
+          "surface": {"enum": ["web", "native", "desktop", "cli", "api", "provided-material"]},
+          "adapter": {"enum": ["playwright-web", "cli", "api", "provided-material"]},
+          "verification": {"enum": ["live-capture", "configured-unavailable", "reproducible-request", "provenance-limited"]},
           "role": {"type": "string", "minLength": 1},
           "availability": {"enum": ["available", "disabled", "failed", "unknown"]},
           "flags": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
@@ -33,6 +37,43 @@
           {
             "if": {"properties": {"availability": {"not": {"const": "available"}}}},
             "then": {"properties": {"allowed_claims": {"type": "array", "maxItems": 0}}}
+          },
+          {
+            "if": {"properties": {"surface": {"enum": ["web", "native", "desktop"]}}},
+            "then": {"properties": {"verification": {"enum": ["live-capture", "configured-unavailable"]}}}
+          },
+          {
+            "if": {"properties": {"surface": {"enum": ["cli", "api"]}}},
+            "then": {"properties": {"verification": {"const": "reproducible-request"}}}
+          },
+          {
+            "if": {"properties": {"surface": {"const": "provided-material"}}},
+            "then": {"properties": {"verification": {"const": "provenance-limited"}}}
+          },
+          {
+            "if": {"properties": {"verification": {"const": "configured-unavailable"}}},
+            "then": {
+              "properties": {
+                "availability": {"enum": ["disabled", "failed", "unknown"]},
+                "allowed_claims": {"type": "array", "maxItems": 0}
+              }
+            }
+          },
+          {
+            "if": {"properties": {"adapter": {"const": "playwright-web"}}},
+            "then": {"properties": {"surface": {"const": "web"}, "verification": {"enum": ["live-capture", "configured-unavailable"]}}}
+          },
+          {
+            "if": {"properties": {"adapter": {"const": "cli"}}},
+            "then": {"properties": {"surface": {"const": "cli"}, "verification": {"const": "reproducible-request"}}}
+          },
+          {
+            "if": {"properties": {"adapter": {"const": "api"}}},
+            "then": {"properties": {"surface": {"const": "api"}, "verification": {"const": "reproducible-request"}}}
+          },
+          {
+            "if": {"properties": {"adapter": {"const": "provided-material"}}},
+            "then": {"properties": {"surface": {"const": "provided-material"}, "verification": {"const": "provenance-limited"}}}
           }
         ]
       }

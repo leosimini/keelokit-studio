@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Web capture fixture</title></head>
+<body>
+  <p id="active-role">operator</p>
+  <label>Task <input id="task" autocomplete="off"></label>
+  <button id="save" type="button">Save</button>
+  <p id="result" role="status">No task saved.</p>
+  <script>
+    document.querySelector("#save").addEventListener("click", () => {
+      const task = document.querySelector("#task").value.trim();
+      document.querySelector("#result").textContent = task ? `Saved: ${task}` : "Task is required.";
+    });
+  </script>
+</body>
+</html>
