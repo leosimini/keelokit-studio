@@ -27,7 +27,7 @@ C04 — production and review.
 | C03-03 | verified | Playwright runs origin-allowlisted, role-asserted journeys and preserves content-addressed success/failure evidence without leaking step values |
 | C03-04 | verified | contributed files retain source, hash, nullable context, reported claims and explicit verification limits without becoming live claims |
 | C03-05 | verified | explicit project-local asset outputs, content hashes, approval state, dependency graphs, and selective invalidation pass independent review |
-| C04-01 | pending | render adapter and parameterized brand components |
+| C04-01 | verified | Remotion 4.0.534 produces an in-memory PNG from hash-bound assets and exact storyboard, brand, evidence, and configuration inputs without claiming QA |
 | C04-02 | pending | intent-bound explainer and tutorial storyboards |
 | C04-03 | pending | optional voice adapter and deterministic test double |
 | C04-04 | pending | measured audio, captions, and layout checks |
@@ -72,6 +72,8 @@ C04 — production and review.
 - Independent C03-04 review reproduced parent-directory, descriptor, and logical-alias replacement races plus blocking FIFO and provenance-validation defects; all were fixed and the reviewer confirmed 107/107 tests with no remaining P1/P2 findings.
 - `node --test tests/assets.test.mjs tests/contracts.test.mjs`: pass, 16 tests; covers explicit project outputs, stable content identity, changed bytes, approval state, dependency order/hash/cycles, selective transitive invalidation, portable paths, files-only destinations, and cross-contract invariants.
 - Independent C03-05 review found output-directory and destination identity races, partial-write and special-file gaps, inconsistent contract validation, unsafe recorded paths, and hashless asset dependencies. All were fixed; a final high-reasoning review ran 22 focused tests and found no remaining P1/P2 defects.
+- `node --test tests/render.test.mjs`: pass, including a real Remotion/Chromium PNG preview, exact manifest identity, input/reference failures, and explicit blocked capability without browser download.
+- Independent C04-01 review reproduced evidence/provenance gaps, partial identity, unsafe MIME/theme input, unloaded fonts, ambiguous timeline/maps, capability overclaim, and inherited-property bypasses. All were fixed; the reviewer confirmed 6/6 render tests with no remaining P1/P2 defects.
 - Narrative/prompt research was assessed as non-authoritative design evidence. Mechanical evidence gates are queued for C03; selector/composer/reviewer work remains owned by C04 and is not described as model-validated.
 
 ## Blockers and limits
@@ -82,5 +84,5 @@ C04 — production and review.
 
 ## Next
 
-Implement C04-01 render adapter and brand components.
+Implement C04-02 intent-bound explainer and tutorial storyboards.
 

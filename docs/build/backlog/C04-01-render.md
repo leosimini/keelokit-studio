@@ -1,6 +1,6 @@
 # C04-01 — Render adapter and brand components
 
-Status: pending
+Status: verified
 
 - Requirements: ST-006, ST-010, ST-015
 - Evaluations: EV-011, EV-012

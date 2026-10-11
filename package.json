@@ -18,7 +18,12 @@
     "verify": "npm run test && npm run validate:plugin && npm run test:install && npm run test:load"
   },
   "dependencies": {
-    "ajv": "8.20.0"
+    "@remotion/bundler": "4.0.534",
+    "@remotion/renderer": "4.0.534",
+    "ajv": "8.20.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.534"
   },
   "devDependencies": {
     "@anthropic-ai/claude-code": "2.1.296",
