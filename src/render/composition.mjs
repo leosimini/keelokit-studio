@@ -33,8 +33,11 @@ function Scene({scene, theme, assetSources, logoSrc}) {
   const exitStart = scene.duration_frames - motion.exit_frames;
   const leave = motion.exit_frames === 0 ? 1 : motion.exit_frames === 1 ? (frame >= scene.duration_frames - 1 ? 0 : 1) : interpolate(frame, [exitStart, scene.duration_frames - 1], [1, 0], {extrapolateLeft: "clamp", extrapolateRight: "clamp"});
   const opacity = (motion.entrance === "fade" ? enter : 1) * (motion.exit === "fade" ? leave : 1);
-  const transform = motion.entrance === "slide-up" ? `translateY(${(1 - enter) * 36}px)` : motion.entrance === "scale" ? `scale(${0.94 + enter * 0.06})` : motion.emphasis === "pulse" ? `scale(${1 + Math.sin(frame / 4) * 0.01})` : "none";
-  return h(AbsoluteFill, {style: {opacity, transform}}, content, scene.highlight ? h(CursorHighlight, {...scene.highlight, theme}) : null, scene.step_label ? h(StepLabel, {text: scene.step_label, theme}) : null, scene.subtitle ? h(SubtitleTrack, {text: scene.subtitle, theme}) : null);
+  const entranceTransform = motion.entrance === "slide-up" ? `translateY(${(1 - enter) * 36}px)` : motion.entrance === "scale" ? `scale(${0.94 + enter * 0.06})` : "";
+  const pulseTransform = motion.emphasis === "pulse" ? `scale(${1 + Math.sin(frame / 4) * 0.01})` : "";
+  const transform = `${entranceTransform} ${pulseTransform}`.trim() || "none";
+  const focusOverlay = motion.emphasis === "focus" ? h(AbsoluteFill, {"data-motion": "focus", style: {pointerEvents: "none", background: "radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,0.5) 100%)"}}) : null;
+  return h(AbsoluteFill, {style: {opacity, transform}}, content, focusOverlay, scene.highlight ? h(CursorHighlight, {...scene.highlight, theme}) : null, scene.step_label ? h(StepLabel, {text: scene.step_label, theme}) : null, scene.subtitle ? h(SubtitleTrack, {text: scene.subtitle, theme}) : null);
 }
 
 export function StudioComposition({scenes, theme, asset_sources: assetSources, logo_src: logoSrc}) {

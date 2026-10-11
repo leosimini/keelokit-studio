@@ -17,3 +17,12 @@ test("rejects incomplete, unsupported and overlong animation cues", () => {
   assert.throws(() => createMotionSpec({storyboard, version: 1, scenes: [{...scenes[0], entrance: "spin"}], rationale: "Unsupported"}), /Invalid motion/);
   assert.throws(() => createMotionSpec({storyboard, version: 1, scenes: [{...scenes[0], entrance_frames: 30, exit_frames: 30}], rationale: "Too long"}), /exceeds/);
 });
+
+test("rejects motion props the renderer does not implement and inconsistent focus", () => {
+  const base = {scene_id: "scene-one", entrance: "fade", entrance_frames: 6, emphasis: "none", exit: "cut", exit_frames: 0, purpose: "Introduce the result"};
+  const spec = (scene) => createMotionSpec({storyboard, version: 1, scenes: [scene], rationale: "Test"});
+  assert.throws(() => spec({...base, easing: "ease-in"}), /does not implement: easing/);
+  assert.throws(() => spec({...base, delay_frames: 3}), /does not implement/);
+  assert.throws(() => spec({...base, focus: "a result"}), /focus text/);
+  assert.throws(() => spec({...base, emphasis: "focus"}), /focus text/);
+});

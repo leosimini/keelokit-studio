@@ -2,6 +2,7 @@ import {contentHash, stableId} from "../core/ids.mjs";
 
 const entrances = new Set(["cut", "fade", "slide-up", "scale"]);
 const emphases = new Set(["none", "pulse", "focus"]);
+const sceneKeys = new Set(["scene_id", "entrance", "entrance_frames", "emphasis", "exit", "exit_frames", "focus", "purpose"]);
 const exits = new Set(["cut", "fade"]);
 
 export class MotionSpecError extends Error {}
@@ -12,6 +13,9 @@ export function createMotionSpec({storyboard, version, scenes, reducedMotion = "
   const byId = new Map(storyboard.scenes.map((scene) => [scene.scene_id, scene]));
   const fps = storyboard.fps;
   const values = scenes.map((scene) => {
+    const unknown = Object.keys(scene).filter((key) => !sceneKeys.has(key));
+    if (unknown.length > 0) throw new MotionSpecError(`Scene ${scene.scene_id} declares motion the renderer does not implement: ${unknown.join(", ")}`);
+    if ((scene.emphasis === "focus") !== (typeof scene.focus === "string" && scene.focus.trim() !== "")) throw new MotionSpecError(`Scene ${scene.scene_id}: focus text is required exactly when emphasis is focus`);
     const target = byId.get(scene.scene_id);
     if (!target || !entrances.has(scene.entrance) || !emphases.has(scene.emphasis) || !exits.has(scene.exit)) throw new MotionSpecError(`Invalid motion for scene ${scene.scene_id}`);
     for (const field of ["entrance_frames", "exit_frames"]) if (!Number.isInteger(scene[field]) || scene[field] < 0) throw new MotionSpecError(`${field} must be a non-negative integer`);
