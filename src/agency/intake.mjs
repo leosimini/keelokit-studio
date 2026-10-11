@@ -1,5 +1,5 @@
 import {randomUUID} from "node:crypto";
-import {stableId} from "../core/ids.mjs";
+import {contentHash, stableId} from "../core/ids.mjs";
 import {assertValidState} from "../state/store.mjs";
 
 const statuses = new Set(["confirmed", "inferred", "contradictory", "stale", "missing"]);
@@ -112,3 +112,31 @@ export function recordIntakeDecision(state, {fieldId, subjectHash, answer, scope
   return assertValidState(next);
 }
 
+
+const languageTag = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
+
+// The standard question every engagement asks before the brief: which languages to produce in.
+export function languagesIntakeField({detected = [], sourceIds = []} = {}) {
+  if (!Array.isArray(detected) || detected.some((tag) => !languageTag.test(tag))) throw new TypeError("detected languages must be language tags such as en-US");
+  const sorted = [...new Set(detected)].sort();
+  return {
+    field_id: "languages",
+    prompt: "Which languages should the pieces be produced in? Name the primary language and any additional ones; each additional language becomes its own localized version, captured and reviewed in that language.",
+    status: sorted.length > 0 ? "inferred" : "missing",
+    impact: "blocking",
+    subject_hash: contentHash({field: "languages", detected: sorted}),
+    owner: null,
+    scope_ids: [],
+    source_ids: [...sourceIds],
+    value: sorted.length > 0 ? {primary: sorted[0], additional: sorted.slice(1)} : null
+  };
+}
+
+// The confirmed answer, shaped for createBrief, or null while the question is still open.
+export function confirmedLanguages(state, field) {
+  const decision = state.decisions.findLast((candidate) => candidate.topic === "intake:languages" && candidate.value?.status === "confirmed" && candidate.value.subject_hash === field.subject_hash);
+  const answer = decision?.value.answer;
+  if (!answer) return null;
+  if (typeof answer.primary !== "string" || !languageTag.test(answer.primary) || !Array.isArray(answer.additional) || answer.additional.some((tag) => !languageTag.test(tag)) || new Set([answer.primary, ...answer.additional]).size !== answer.additional.length + 1) throw new TypeError("The confirmed languages answer must be {primary, additional[]} with distinct language tags");
+  return {primary: answer.primary, additional: [...answer.additional]};
+}

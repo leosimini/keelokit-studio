@@ -74,3 +74,20 @@ test("intake validates duplicate fields, batch size, and undefined answers", () 
   assert.throws(() => recordIntakeDecision(state, {fieldId: "goal", subjectHash, answer: "activation", scopeIds: ["suite-a", "suite-a"], source: "conversation"}), /unique/);
 });
 
+
+test("asks which languages to produce in until the owner confirms them", async () => {
+  const {languagesIntakeField, confirmedLanguages} = await import("../src/agency/intake.mjs");
+  const field = languagesIntakeField({detected: ["es-AR"]});
+  assert.equal(field.status, "inferred");
+  let state = createInitialState("product-a");
+  const first = planIntake({projectId: "product-a", fields: [field], decisions: state.decisions});
+  assert.equal(first.questions[0].field_id, "languages");
+  assert.deepEqual(first.blocked_scope_ids, ["project"]);
+  assert.equal(confirmedLanguages(state, field), null);
+  state = recordIntakeDecision(state, {fieldId: "languages", subjectHash: field.subject_hash, answer: {primary: "es-AR", additional: ["en-US"]}, source: "conversation", recordedAt: "2026-10-11T12:01:00.000Z"});
+  assert.equal(planIntake({projectId: "product-a", fields: [field], decisions: state.decisions}).questions.length, 0);
+  assert.deepEqual(confirmedLanguages(state, field), {primary: "es-AR", additional: ["en-US"]});
+  const bad = recordIntakeDecision(createInitialState("product-a"), {fieldId: "languages", subjectHash: field.subject_hash, answer: {primary: "es-AR", additional: ["es-AR"]}, source: "conversation", recordedAt: "2026-10-11T12:01:00.000Z"});
+  assert.throws(() => confirmedLanguages(bad, field), /distinct/);
+  assert.throws(() => languagesIntakeField({detected: ["Español"]}), TypeError);
+});
