@@ -63,3 +63,41 @@ test("reads image dimensions from PNG, JPEG, GIF and WebP headers", () => {
   assert.deepEqual(imageDimensions(webp, "image/webp"), {width: 800, height: 450});
   assert.throws(() => imageDimensions(Buffer.from("junk"), "image/png"), /dimensions/);
 });
+
+import {estimateLines, mixHex, musicVolume, sceneLayout} from "../src/render/geometry.mjs";
+
+test("mixes hex colours", () => {
+  assert.equal(mixHex("#000000", "#ffffff", 0.5), "#808080");
+  assert.equal(mixHex("#102030", "#102030", 0.7), "#102030");
+});
+
+test("places the label as a chip above the stage, captions below it, and a side panel for phones in wide frames", () => {
+  const args = {width: 1920, height: 1080, padding: 48, bodyPx: 30, subtitlePx: 28};
+  const none = sceneLayout({...args, label: null, subtitle: ""});
+  assert.equal(none.label, null); assert.equal(none.subtitle, null);
+  assert.ok(none.stage.height > 900);
+  const both = sceneLayout({...args, label: "Assign the job", subtitle: "Pick a technician and confirm."});
+  assert.equal(both.label.mode, "chip");
+  assert.ok(both.stage.top >= both.label.top + both.label.height, "the stage starts below the chip");
+  assert.ok(both.stage.top + both.stage.height <= 1080 - both.subtitle.bottom - both.subtitle.height, "the stage never overlaps the captions");
+  assert.ok(both.label.width < 1920 - 96, "the chip hugs its text instead of spanning the frame");
+  const wide = sceneLayout({...args, label: "Jobs reach technicians instantly", subtitle: "Technicians see it on their phone.", panel: true});
+  assert.equal(wide.label.mode, "panel");
+  assert.ok(wide.stage.left >= wide.label.left + wide.label.width, "the stage sits beside the panel");
+  assert.ok(wide.stage.height > both.stage.height, "a side panel frees vertical space for the phone");
+  const tall = sceneLayout({width: 1080, height: 1920, padding: 48, bodyPx: 40, subtitlePx: 38, label: "A much longer step label that needs to wrap onto several lines to fit", subtitle: "Narration that is long enough to wrap onto at least two lines in a vertical frame."});
+  assert.ok(tall.stage.height > 0.3 * 1920 - 1);
+  assert.equal(estimateLines("", 20, 400), 0);
+  assert.ok(estimateLines("x".repeat(200), 20, 400) > 1);
+});
+
+test("music fades in and out and ducks under narration", () => {
+  const music = {total: 300, volume: 0.4, duck_volume: 0.1, fade_in_frames: 30, fade_out_frames: 30, windows: [{from: 100, to: 200}]};
+  approx(musicVolume({...music, frame: 0}), 0);
+  approx(musicVolume({...music, frame: 60}), 0.4);
+  approx(musicVolume({...music, frame: 150}), 0.1);
+  approx(musicVolume({...music, frame: 299}), 0.4 / 30, 1e-3);
+  const ramp = musicVolume({...music, frame: 98});
+  assert.ok(ramp < 0.4 && ramp > 0.1, "ducking ramps in before narration starts");
+  approx(musicVolume({...music, windows: [], frame: 150}), 0.4);
+});

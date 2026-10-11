@@ -8,6 +8,7 @@ import {resolve} from "node:path";
 import {promisify} from "node:util";
 import {createAssetInventory} from "../assets/inventory.mjs";
 import {contentHash, stableId} from "../core/ids.mjs";
+import {imageDimensions} from "./geometry.mjs";
 import {assertMotionSpecCurrent} from "../agency/motion.mjs";
 import {assertProductionHandoffs} from "../agency/production-flow.mjs";
 
@@ -21,6 +22,8 @@ const validateBrand = ajv.compile(brandSchema);
 const validateStoryboard = ajv.compile(storyboardSchema);
 const validateEvidence = ajv.compile(evidenceSchema);
 const components = new Set(["title", "browser", "phone", "feature", "result", "end"]);
+const assetComponents = new Set(["browser", "phone", "feature"]);
+const staticMotion = Object.freeze({entrance: "cut", entrance_frames: 0, emphasis: "none", exit: "cut", exit_frames: 0, focus: null, purpose: "Static compatibility render", camera: null, callouts: [], cursor: null, transition: Object.freeze({type: "none", frames: 0})});
 const hex = /^#[a-fA-F0-9]{6}$/;
 const dataUrl = /^data:([a-zA-Z0-9.+-]+\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/]*={0,2})$/;
 const execFileAsync = promisify(execFile);
@@ -55,6 +58,7 @@ function verifiedDataSources(inventory, assetSources) {
   if (!assetSources || typeof assetSources !== "object" || Array.isArray(assetSources)) throw new RenderAdapterError("assetSources must map asset IDs to data URLs");
   const sources = Object.create(null);
   const mediaTypes = Object.create(null);
+  const dimensions = Object.create(null);
   const known = new Set(inventory.assets.map(({asset_id}) => asset_id));
   const visualTypes = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
   const fontTypes = new Set(["font/woff", "font/woff2", "font/ttf", "font/otf", "application/font-woff", "application/x-font-ttf", "application/vnd.ms-fontobject"]);
@@ -69,8 +73,11 @@ function verifiedDataSources(inventory, assetSources) {
     if (createHash("sha256").update(bytes).digest("hex") !== asset.sha256) throw new RenderAdapterError(`Asset source ${asset.asset_id} does not match its inventory hash`);
     sources[asset.asset_id] = assetSources[asset.asset_id];
     mediaTypes[asset.asset_id] = match[1];
+    if (visualTypes.has(match[1])) {
+      try { dimensions[asset.asset_id] = imageDimensions(bytes, match[1]); } catch { throw new RenderAdapterError(`Asset source ${asset.asset_id} is not a readable ${match[1]} image`); }
+    }
   }
-  return {sources, mediaTypes};
+  return {sources, mediaTypes, dimensions};
 }
 
 function optionalSceneMap(name, value, sceneIds, validateValue) {
@@ -112,7 +119,7 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
   if (evidenceSet.size !== evidenceIds.length) throw new RenderAdapterError("product-evidence.json must have unique evidence_id values");
   if (!renderConfig || !Number.isInteger(renderConfig.width) || !Number.isInteger(renderConfig.height) || renderConfig.width < 2 || renderConfig.height < 2 || renderConfig.width % 2 || renderConfig.height % 2) throw new RenderAdapterError("renderConfig requires explicit positive even width and height");
   const theme = validateTheme(renderConfig.theme);
-  const {sources: sourceMap, mediaTypes} = verifiedDataSources(inventory, assetSources);
+  const {sources: sourceMap, mediaTypes, dimensions: assetDimensions} = verifiedDataSources(inventory, assetSources);
   const assetsById = new Map(inventory.assets.map((asset) => [asset.asset_id, asset]));
   const sceneIds = storyboard.scenes.map(({scene_id}) => scene_id);
   if (motionSpec !== null) assertMotionSpecCurrent(motionSpec, storyboard);
@@ -155,6 +162,8 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
         if (!record.capture_paths.includes(asset.path) && !record.capture_paths.includes(asset.origin.source)) throw new RenderAdapterError(`Scene ${scene.scene_id} asset ${assetId} path is not bound to evidence ${evidenceId}`);
       }
     }
+    const motion = motionByScene.get(scene.scene_id) ?? staticMotion;
+    if ((motion.camera || motion.callouts.length > 0 || motion.cursor) && !(assetComponents.has(component) && scene.asset_ids.length === 1)) throw new RenderAdapterError(`Scene ${scene.scene_id} declares a camera, callouts or cursor, which need a browser, phone or feature component showing its asset`);
     if (["browser", "phone"].includes(component) && scene.asset_ids.length === 0) throw new RenderAdapterError(`${component} scene ${scene.scene_id} requires a supplied product asset`);
     return {
       ...structuredClone(scene),
@@ -164,7 +173,7 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
       subtitle: Object.hasOwn(subtitles, scene.scene_id) ? subtitles[scene.scene_id] : "",
       step_label: Object.hasOwn(stepLabels, scene.scene_id) ? stepLabels[scene.scene_id] : null,
       highlight: Object.hasOwn(highlights, scene.scene_id) ? highlights[scene.scene_id] : null,
-      motion: motionByScene.get(scene.scene_id) ?? {entrance: "cut", entrance_frames: 0, emphasis: "none", exit: "cut", exit_frames: 0, focus: null, purpose: "Static compatibility render"}
+      motion: motionByScene.get(scene.scene_id) ?? staticMotion
     };
   });
   if (scenes.some(({duration_frames}) => duration_frames < 1)) throw new RenderAdapterError("Every scene must occupy at least one frame");
@@ -177,7 +186,7 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
   const renderTheme = fontAssetId === null ? theme : {...theme, font_family: "KeelokitStudioPinnedFont", font_src: sourceMap[fontAssetId]};
   const durationInFrames = Math.round(storyboard.duration_seconds * storyboard.fps);
   if (durationInFrames < 1) throw new RenderAdapterError("Storyboard duration must occupy at least one frame");
-  const inputProps = {width: renderConfig.width, height: renderConfig.height, fps: storyboard.fps, duration_in_frames: durationInFrames, theme: renderTheme, scenes, asset_sources: sourceMap, logo_src: logoId === null ? null : sourceMap[logoId]};
+  const inputProps = {width: renderConfig.width, height: renderConfig.height, fps: storyboard.fps, duration_in_frames: durationInFrames, theme: renderTheme, scenes, asset_sources: sourceMap, asset_dimensions: assetDimensions, logo_src: logoId === null ? null : sourceMap[logoId]};
   const selectedAssetIds = [...new Set(storyboard.scenes.flatMap(({asset_ids}) => asset_ids).concat(logoId ?? [], fontAssetId ?? []))].sort();
   for (const assetId of selectedAssetIds) {
     for (const dependency of assetsById.get(assetId).depends_on) {
@@ -289,16 +298,17 @@ async function renderStillFrames(options, frameFor) {
   }
 }
 
-const midpoint = (scene) => ({scene_id: scene.scene_id, frame: scene.from_frame + Math.floor(scene.duration_frames / 2)});
+// `position` is how far through each scene to look: 0 is its first frame, 1 its last, 0.5 (the default) its middle.
+const pick = (scene, position = 0.5) => ({scene_id: scene.scene_id, frame: scene.from_frame + Math.floor((scene.duration_frames - 1) * position)});
 
 // One still at the midpoint of the first scene: frame 0 can be an entrance fade that shows only the background.
 export async function renderRemotionPreview(options) {
-  const {prepared, stills} = await renderStillFrames(options, (scenes) => [midpoint([...scenes].sort((left, right) => left.from_frame - right.from_frame)[0])]);
+  const {prepared, stills} = await renderStillFrames(options, (scenes) => [pick([...scenes].sort((left, right) => left.from_frame - right.from_frame)[0], options.position)]);
   return {...prepared, artifact: stills[0].artifact};
 }
 
 // A still at the midpoint of every scene, so a reviewer sees each scene's asset and copy, not only the opening.
 export async function renderRemotionSceneStills(options) {
-  const {prepared, stills} = await renderStillFrames(options, (scenes) => [...scenes].sort((left, right) => left.from_frame - right.from_frame).map(midpoint));
+  const {prepared, stills} = await renderStillFrames(options, (scenes) => [...scenes].sort((left, right) => left.from_frame - right.from_frame).map((scene) => pick(scene, options.position)));
   return {...prepared, stills};
 }

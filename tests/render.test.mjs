@@ -7,6 +7,7 @@ import {resolve} from "node:path";
 import {chromiumExecutable} from "./support/chromium.mjs";
 import {prepareRemotionRender, remotionRenderCapability, renderRemotionPreview, renderRemotionLocalizedVideos, renderRemotionSceneStills, renderRemotionVideo, RenderAdapterError} from "../src/render/remotion-adapter.mjs";
 import {createMotionSpec} from "../src/agency/motion.mjs";
+import {decodePng, encodePng} from "./support/png.mjs";
 import {createAgencyHandoff} from "../src/agency/handoff.mjs";
 import {createAssetRequirements, fulfillAssetRequirement} from "../src/assets/requirements.mjs";
 import {contentHash} from "../src/core/ids.mjs";
@@ -191,6 +192,38 @@ test("renders a still at the midpoint of every scene, not only frame 0", {timeou
   const two = {...storyboard, duration_seconds: 2, scenes: [{...storyboard.scenes[0], scene_id: "scene-a", start_seconds: 0, end_seconds: 1}, {...storyboard.scenes[0], scene_id: "scene-b", start_seconds: 1, end_seconds: 2, asset_ids: [], on_screen_text: "Second scene copy"}]};
   const config = {...renderConfig, scene_components: {"scene-a": "browser", "scene-b": "title"}};
   const result = await renderRemotionSceneStills({...input({storyboard: two, renderConfig: config}), browserExecutable: chromiumExecutable});
-  assert.deepEqual(result.stills.map(({scene_id, frame}) => [scene_id, frame]), [["scene-a", 15], ["scene-b", 45]]);
+  assert.deepEqual(result.stills.map(({scene_id, frame}) => [scene_id, frame]), [["scene-a", 14], ["scene-b", 44]]);
   assert.notEqual(result.stills[0].artifact.sha256, result.stills[1].artifact.sha256);
+});
+
+const quadrants = [[230, 40, 40], [40, 200, 60], [40, 80, 230], [240, 200, 30]];
+const quadrantPng = () => encodePng(320, 180, (x, y) => quadrants[(y >= 90 ? 2 : 0) + (x >= 160 ? 1 : 0)]);
+
+function colourCounts(png) {
+  const counts = quadrants.map(() => 0);
+  for (let y = 0; y < png.height; y += 1) for (let x = 0; x < png.width; x += 1) {
+    const pixel = png.at(x, y);
+    quadrants.forEach((colour, index) => { if (colour.every((value, channel) => Math.abs(value - pixel[channel]) < 28)) counts[index] += 1; });
+  }
+  return counts;
+}
+
+test("the camera crops and zooms into the asset: the last frame shows only the focused quadrant", {timeout: 180000}, async (context) => {
+  const capability = await remotionRenderCapability({browserExecutable: chromiumExecutable});
+  if (capability.status !== "available") return context.skip(capability.reason);
+  const options = videoCase("en-US");
+  const bytes = quadrantPng();
+  const sha = createHash("sha256").update(bytes).digest("hex");
+  options.assets = {...options.assets, assets: [{...options.assets.assets[0], sha256: sha}]};
+  options.evidence = {...options.evidence, evidence: [{...options.evidence.evidence[0], hashes: [`sha256:${sha}`]}]};
+  options.assetSources = {[options.assets.assets[0].asset_id]: `data:image/png;base64,${bytes.toString("base64")}`};
+  options.renderConfig = {...renderConfig, width: 640, height: 360, scene_components: {"scene-task": "browser"}};
+  const scene = {scene_id: "scene-task", entrance: "cut", entrance_frames: 0, emphasis: "none", exit: "cut", exit_frames: 0, focus: null, purpose: "Zoom into the first quadrant", transition: {type: "none", frames: 0}, callouts: [], cursor: null, camera: {start: {x: 0.5, y: 0.5, zoom: 1}, end: {x: 0.25, y: 0.25, zoom: 2}, from_frame: 0, to_frame: 20, easing: "linear"}};
+  options.motionSpec = createMotionSpec({storyboard: options.storyboard, version: 1, scenes: [scene], rationale: "Crop test"});
+  const first = decodePng((await renderRemotionPreview({...options, position: 0, browserExecutable: chromiumExecutable})).artifact.bytes);
+  const last = decodePng((await renderRemotionPreview({...options, position: 1, browserExecutable: chromiumExecutable})).artifact.bytes);
+  const [startCounts, endCounts] = [colourCounts(first), colourCounts(last)];
+  assert.ok(startCounts.every((count) => count > 200), `all four quadrants are visible before the zoom: ${startCounts}`);
+  assert.ok(endCounts[0] > 2.5 * startCounts[0], `the red quadrant fills the window after the zoom: ${startCounts} -> ${endCounts}`);
+  assert.ok(endCounts.slice(1).every((count) => count < endCounts[0] * 0.005), `only anti-aliased edge pixels of the other quadrants remain: ${endCounts}`);
 });

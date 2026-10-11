@@ -81,3 +81,58 @@ export function imageDimensions(bytes, mediaType) {
   }
   return fail();
 }
+
+export function mixHex(from, to, amount) {
+  const channel = (hex, index) => parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16);
+  return `#${[0, 1, 2].map((index) => Math.round(channel(from, index) + (channel(to, index) - channel(from, index)) * amount).toString(16).padStart(2, "0")).join("")}`;
+}
+
+export function estimateLines(text, fontPx, maxWidth) {
+  if (!text) return 0;
+  return Math.max(1, Math.ceil((text.length * fontPx * 0.52) / Math.max(1, maxWidth)));
+}
+
+// Lays out the text around the visual stage. The step label is a chip above the stage, or a side panel when a phone sits in a wide frame;
+// captions sit at the bottom. What remains is the area for the stage.
+export function sceneLayout({width, height, padding, bodyPx, subtitlePx, titlePx = bodyPx * 1.6, label, subtitle, panel = false}) {
+  const gap = Math.round(padding * 0.5);
+  const subtitleWidth = width * 0.82;
+  const subtitleHeight = subtitle ? estimateLines(subtitle, subtitlePx, subtitleWidth - subtitlePx * 2) * subtitlePx * 1.35 + subtitlePx : 0;
+  const bottomEdge = height - padding - (subtitleHeight ? subtitleHeight + gap : 0);
+  const subtitleBox = subtitleHeight ? {bottom: padding, height: subtitleHeight, width: subtitleWidth} : null;
+  if (label && panel) {
+    const panelWidth = Math.round(width * 0.34);
+    const stageLeft = padding + panelWidth + padding;
+    return {subtitle: subtitleBox, label: {mode: "panel", left: padding, top: padding, width: panelWidth, height: bottomEdge - padding, fontPx: titlePx}, stage: {left: stageLeft, top: padding, width: width - stageLeft - padding, height: bottomEdge - padding}};
+  }
+  const chipMax = width - 2 * padding;
+  const chipFont = bodyPx * 0.95;
+  const chipLines = label ? estimateLines(label, chipFont, chipMax - chipFont * 2.4) : 0;
+  const chipHeight = label ? chipLines * chipFont * 1.3 + chipFont * 1.0 : 0;
+  const chipWidth = label ? Math.min(chipMax, Math.round(label.length * chipFont * 0.56 + chipFont * 2.6)) : 0;
+  const stageTop = padding + (chipHeight ? chipHeight + gap : 0);
+  return {
+    subtitle: subtitleBox,
+    label: label ? {mode: "chip", top: padding, width: chipWidth, height: chipHeight, fontPx: chipFont} : null,
+    stage: {left: padding, top: stageTop, width: width - 2 * padding, height: Math.max(height * 0.3, bottomEdge - stageTop)}
+  };
+}
+
+// Music volume at a frame: fades in and out over the piece and ducks under narration windows ([{from, to}] in frames).
+export function musicVolume({frame, total, volume, duck_volume, fade_in_frames, fade_out_frames, windows, ramp = 6}) {
+  const fadeIn = fade_in_frames > 0 ? Math.min(1, frame / fade_in_frames) : 1;
+  const fadeOut = fade_out_frames > 0 ? Math.min(1, Math.max(0, (total - frame) / fade_out_frames)) : 1;
+  let duck = 1;
+  for (const window of windows) {
+    const into = Math.min(1, Math.max(0, (frame - (window.from - ramp)) / ramp));
+    const out = Math.min(1, Math.max(0, (window.to + ramp - frame) / ramp));
+    duck = Math.min(duck, 1 - Math.min(into, out) * (1 - duck_volume / volume));
+  }
+  return Math.max(0, volume * fadeIn * fadeOut * duck);
+}
+
+// Black or white, whichever reads better on the given hex background.
+export function readableOn(hex) {
+  const channel = (index) => { const value = parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16) / 255; return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4; };
+  return 0.2126 * channel(0) + 0.7152 * channel(1) + 0.0722 * channel(2) > 0.4 ? "#000000" : "#ffffff";
+}
