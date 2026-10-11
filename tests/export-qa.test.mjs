@@ -64,6 +64,25 @@ test("does not trust a self-declared probe for bytes that are not the declared c
   assert.equal(fake.status, "failed");
   const withoutMoov = createExportManifest({source, pieceId: "piece-one", requestedVariants: ["video"], artifacts: [{variant: "video", content_type: "video/mp4", bytes: Buffer.concat([box("ftyp", Buffer.from("isom0000")), box("mdat", Buffer.alloc(16))]), probe}]});
   assert.equal(withoutMoov.status, "failed");
-  const structural = createExportManifest({source, pieceId: "piece-one", requestedVariants: ["video"], artifacts: [{variant: "video", content_type: "video/mp4", bytes: Buffer.concat([box("ftyp", Buffer.from("isom0000")), box("mdat", Buffer.alloc(16)), box("moov", Buffer.alloc(8))]), probe}]});
+  const structural = createExportManifest({source, pieceId: "piece-one", requestedVariants: ["video"], artifacts: [{variant: "video", content_type: "video/mp4", bytes: mp4With(["vide"]), probe}]});
   assert.equal(structural.status, "passed");
+});
+
+function mp4With(handlers) {
+  const hdlr = (type) => box("hdlr", Buffer.concat([Buffer.alloc(8), Buffer.from(type, "latin1"), Buffer.alloc(12)]));
+  const trak = (type) => box("trak", box("mdia", hdlr(type)));
+  return Buffer.concat([box("ftyp", Buffer.from("isom0000")), box("mdat", Buffer.alloc(16)), box("moov", Buffer.concat(handlers.map(trak)))]);
+}
+
+test("reads the tracks inside an MP4 and fails an export that should carry audio but does not", () => {
+  const silent = mp4With(["vide"]);
+  const voiced = mp4With(["vide", "soun"]);
+  const probe = {decodable: true, width: 1920, height: 1080, duration_seconds: 10};
+  const manifest = (bytes, expectsAudio) => createExportManifest({source, pieceId: "piece-one", requestedVariants: ["video"], artifacts: [{variant: "video", content_type: "video/mp4", bytes, probe, expects_audio: expectsAudio}]});
+  assert.deepEqual([manifest(voiced, true).artifacts[0].video_tracks, manifest(voiced, true).artifacts[0].audio_tracks], [1, 1]);
+  assert.equal(manifest(voiced, true).status, "passed");
+  assert.equal(manifest(silent, false).status, "passed");
+  const missing = manifest(silent, true);
+  assert.equal(missing.status, "failed");
+  assert.match(missing.mechanical_checks[0].detail, /audio track/);
 });

@@ -67,6 +67,27 @@ function subtitles(bytes, contentType) {
   return {characters: text.length};
 }
 
+// Counts the video and audio tracks declared in the moov box, by handler type.
+function mp4Tracks(bytes) {
+  const counts = {video: 0, audio: 0};
+  const walk = (start, end, path) => {
+    for (let offset = start; offset + 8 <= end;) {
+      const size = bytes.readUInt32BE(offset);
+      if (size < 8 || offset + size > end) return;
+      const type = bytes.toString("latin1", offset + 4, offset + 8);
+      if (["moov", "trak", "mdia"].includes(type)) walk(offset + 8, offset + size, [...path, type]);
+      if (type === "hdlr" && path.at(-1) === "mdia") {
+        const handler = bytes.toString("latin1", offset + 16, offset + 20);
+        if (handler === "vide") counts.video += 1;
+        if (handler === "soun") counts.audio += 1;
+      }
+      offset += size;
+    }
+  };
+  walk(0, bytes.length, []);
+  return counts;
+}
+
 function assertMp4Structure(bytes) {
   const types = [];
   for (let offset = 0; offset + 8 <= bytes.length;) {
@@ -87,7 +108,10 @@ function inspectArtifact(artifact) {
   else if (artifact.probe?.decodable === true) {
     if (artifact.content_type !== "video/mp4") throw new ExportQaError(`No structural container check exists for ${artifact.content_type}`);
     assertMp4Structure(artifact.bytes);
-    media = {width: artifact.probe.width ?? null, height: artifact.probe.height ?? null, duration_seconds: artifact.probe.duration_seconds ?? null};
+    const tracks = mp4Tracks(artifact.bytes);
+    if (tracks.video === 0) throw new ExportQaError("MP4 has no video track");
+    if (artifact.expects_audio === true && tracks.audio === 0) throw new ExportQaError("The piece has narration or music but the MP4 has no audio track");
+    media = {width: artifact.probe.width ?? null, height: artifact.probe.height ?? null, duration_seconds: artifact.probe.duration_seconds ?? null, video_tracks: tracks.video, audio_tracks: tracks.audio};
   }
   else throw new ExportQaError(`No decodability measurement is available for ${artifact.content_type}`);
   return {variant: artifact.variant, content_type: artifact.content_type, sha256: createHash("sha256").update(artifact.bytes).digest("hex"), bytes: artifact.bytes.length, ...media};
