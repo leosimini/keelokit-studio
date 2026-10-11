@@ -119,6 +119,7 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
     const scene = orderedScenes[index];
     if (scene.end_seconds <= scene.start_seconds || scene.end_seconds > storyboard.duration_seconds) throw new RenderAdapterError(`Scene ${scene.scene_id} has invalid timeline bounds`);
     if (index > 0 && scene.start_seconds < orderedScenes[index - 1].end_seconds) throw new RenderAdapterError(`Scene ${scene.scene_id} overlaps ${orderedScenes[index - 1].scene_id}`);
+    if (scene.start_seconds !== (index === 0 ? 0 : orderedScenes[index - 1].end_seconds) || (index === orderedScenes.length - 1 && scene.end_seconds !== storyboard.duration_seconds)) throw new RenderAdapterError(`Scene ${scene.scene_id} breaks the contiguous timeline from 0 to ${storyboard.duration_seconds}s; a gap would render as blank video`);
     if (new Set(scene.asset_ids).size !== scene.asset_ids.length || new Set(scene.evidence_ids).size !== scene.evidence_ids.length) throw new RenderAdapterError(`Scene ${scene.scene_id} must not duplicate asset or evidence references`);
   }
   const sceneComponents = renderConfig.scene_components;
@@ -132,6 +133,7 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
     if (!components.has(component)) throw new RenderAdapterError(`Scene ${scene.scene_id} requires a supported component selection`);
     for (const evidenceId of scene.evidence_ids) if (!evidenceSet.has(evidenceId)) throw new RenderAdapterError(`Scene ${scene.scene_id} references unknown evidence ${evidenceId}`);
     if (scene.asset_ids.length > 1) throw new RenderAdapterError(`Scene ${scene.scene_id} declares multiple visual assets, but the current composition supports one; split the scene or choose an explicit composite asset`);
+    if (scene.asset_ids.length > 0 && ["title", "result", "end"].includes(component)) throw new RenderAdapterError(`Scene ${scene.scene_id} component ${component} would not display its declared asset; choose browser, phone or feature`);
     for (const assetId of scene.asset_ids) {
       if (!assetsById.has(assetId)) throw new RenderAdapterError(`Scene ${scene.scene_id} references unknown asset ${assetId}`);
       if (!Object.hasOwn(sourceMap, assetId)) throw new RenderAdapterError(`Scene ${scene.scene_id} asset ${assetId} has no hash-verified render source`);
@@ -178,6 +180,7 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
   const assetHashes = selectedAssetIds.map((id) => `${id}:${assetsById.get(id).sha256}:${mediaTypes[id]}`);
   const assetRecordHashes = selectedAssetIds.map((id) => `${id}:${stableId("asset-record", assetsById.get(id))}`);
   const assetStates = selectedAssetIds.map((id) => ({asset_id: id, status: assetsById.get(id).status, approval: structuredClone(assetsById.get(id).approval)}));
+  if (assetStates.some(({approval}) => approval.status === "unapproved")) throw new RenderAdapterError("Unapproved assets cannot enter a render");
   if (assetStates.some(({status}) => status !== "valid")) throw new RenderAdapterError("Stale assets cannot enter a new render");
   const selectedEvidence = [...new Set(storyboard.scenes.flatMap(({evidence_ids}) => evidence_ids))].sort();
   const evidenceHashes = selectedEvidence.map((id) => `${id}:${stableId("evidence-record", evidenceById.get(id))}`);

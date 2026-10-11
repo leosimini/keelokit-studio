@@ -114,3 +114,13 @@ test("renders a real timed MP4 from an explicit motion specification", {timeout:
   assert.ok(result.artifact.bytes.length > 1000);
   assert.equal(result.manifest.configuration.motion_spec_id, motionSpec.motion_spec_id);
 });
+
+test("requires a contiguous timeline, rejects unapproved assets and assets the chosen component would ignore", () => {
+  const two = (first, second, duration) => ({...storyboard, duration_seconds: duration, scenes: [{...storyboard.scenes[0], scene_id: "scene-a", ...first}, {...storyboard.scenes[0], scene_id: "scene-b", asset_ids: [], ...second}]});
+  const config = {...renderConfig, scene_components: {"scene-a": "browser", "scene-b": "title"}};
+  assert.ok(prepareRemotionRender(input({storyboard: two({start_seconds: 0, end_seconds: 1}, {start_seconds: 1, end_seconds: 2}, 2), renderConfig: config})));
+  assert.throws(() => prepareRemotionRender(input({storyboard: two({start_seconds: 0, end_seconds: 1}, {start_seconds: 2, end_seconds: 3}, 3), renderConfig: config})), /contiguous/);
+  assert.throws(() => prepareRemotionRender(input({storyboard: two({start_seconds: 0, end_seconds: 1}, {start_seconds: 1, end_seconds: 2}, 3), renderConfig: config})), /contiguous/);
+  assert.throws(() => prepareRemotionRender(input({assets: {...assets, assets: [{...asset, approval: {status: "unapproved", review_id: "review-one"}}]}})), /unapproved/i);
+  assert.throws(() => prepareRemotionRender(input({renderConfig: {...renderConfig, scene_components: {"scene-task": "title"}}})), /would not display/);
+});
