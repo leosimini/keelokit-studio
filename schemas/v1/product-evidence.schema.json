@@ -19,8 +19,8 @@
           "feature_or_journey": {"type": "string", "minLength": 1},
           "procedure_hash": {"type": "string", "minLength": 1},
           "surface": {"enum": ["web", "native", "desktop", "cli", "api", "provided-material"]},
-          "adapter": {"enum": ["playwright-web", "cli", "api", "provided-material"]},
-          "verification": {"enum": ["live-capture", "configured-unavailable", "reproducible-request", "provenance-limited"]},
+          "adapter": {"enum": ["playwright-web", "adb-android", "simctl-ios", "cli", "api", "provided-material"]},
+          "verification": {"enum": ["live-capture", "configured-unavailable", "screenshot-only", "reproducible-request", "provenance-limited"]},
           "role": {"type": "string", "minLength": 1},
           "availability": {"enum": ["available", "disabled", "failed", "unknown"]},
           "flags": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
@@ -40,7 +40,19 @@
           },
           {
             "if": {"properties": {"surface": {"enum": ["web", "native", "desktop"]}}},
-            "then": {"properties": {"verification": {"enum": ["live-capture", "configured-unavailable"]}}}
+            "then": {"properties": {"verification": {"enum": ["live-capture", "configured-unavailable", "screenshot-only"]}}}
+          },
+          {
+            "if": {"properties": {"verification": {"const": "screenshot-only"}}},
+            "then": {"properties": {"surface": {"const": "native"}, "allowed_claims": {"type": "array", "maxItems": 0}}}
+          },
+          {
+            "if": {"properties": {"adapter": {"const": "adb-android"}}},
+            "then": {"properties": {"surface": {"const": "native"}, "verification": {"enum": ["live-capture", "configured-unavailable"]}}}
+          },
+          {
+            "if": {"properties": {"adapter": {"const": "simctl-ios"}}},
+            "then": {"properties": {"surface": {"const": "native"}, "verification": {"enum": ["screenshot-only", "configured-unavailable"]}}}
           },
           {
             "if": {"properties": {"surface": {"enum": ["cli", "api"]}}},

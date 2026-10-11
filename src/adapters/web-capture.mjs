@@ -1,10 +1,8 @@
 import {createHash} from "node:crypto";
-import {mkdir, readFile, writeFile} from "node:fs/promises";
-import {dirname} from "node:path";
 import {chromium} from "playwright";
 import {createEvidenceRecord} from "../agency/evidence.mjs";
 import {stableId} from "../core/ids.mjs";
-import {resolveConsumerPath} from "../core/paths.mjs";
+import {storeCaptureBytes} from "../core/captures.mjs";
 
 const actions = new Set(["goto", "click", "fill", "select", "check", "uncheck"]);
 
@@ -90,19 +88,7 @@ async function closeQuietly(resource) {
 }
 
 async function storeScreenshot({page, projectRoot, outputDirectory, captureId, suffix = ""}) {
-  const content = await page.screenshot({fullPage: true});
-  const sha256 = createHash("sha256").update(content).digest("hex");
-  const path = `${outputDirectory}/${captureId}${suffix}-${sha256}.png`;
-  const absolutePath = await resolveConsumerPath(projectRoot, path);
-  await mkdir(dirname(absolutePath), {recursive: true});
-  try {
-    await writeFile(absolutePath, content, {flag: "wx"});
-  } catch (error) {
-    if (error.code !== "EEXIST") throw error;
-    const existingHash = createHash("sha256").update(await readFile(absolutePath)).digest("hex");
-    if (existingHash !== sha256) throw new Error("Content-addressed capture collision");
-  }
-  return {path, hash: `sha256:${sha256}`};
+  return storeCaptureBytes({projectRoot, outputDirectory, captureId, suffix, content: await page.screenshot({fullPage: true})});
 }
 
 export async function captureWebJourney({projectRoot, projectId, baseUrl, allowedOrigins = [], executablePath, browserType = chromium, journey, role, availability = "available", flags = [], build, commit = null, locale, viewport = {width: 1280, height: 720}, actionTimeoutMs = 10000, demoDataId, outputDirectory = "media/studio/captures", allowedClaims = []}) {

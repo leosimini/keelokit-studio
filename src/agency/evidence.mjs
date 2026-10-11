@@ -7,6 +7,8 @@ const schema = JSON.parse(await readFile(resolve(import.meta.dirname, "../../sch
 const validate = new Ajv2020({allErrors: true, strict: true}).compile(schema);
 const adapterCapabilities = new Map([
   ["playwright-web", {surface: "web", verifications: new Set(["live-capture", "configured-unavailable"])}],
+  ["adb-android", {surface: "native", verifications: new Set(["live-capture", "configured-unavailable"])}],
+  ["simctl-ios", {surface: "native", verifications: new Set(["screenshot-only", "configured-unavailable"])}],
   ["cli", {surface: "cli", verifications: new Set(["reproducible-request"])}],
   ["api", {surface: "api", verifications: new Set(["reproducible-request"])}],
   ["provided-material", {surface: "provided-material", verifications: new Set(["provenance-limited"])}]

@@ -140,3 +140,14 @@ test("requires an explicit available target and complete current flag set", () =
   assert.equal(result.status, "blocked");
   assert.ok(result.blockers.some(({code}) => code === "flag_mismatch"));
 });
+
+test("native evidence: Android can assert results, iOS simulator captures are screenshot-only and carry no claims", () => {
+  const base = {projectId: "p", featureOrJourney: "Open app", procedureHash: "procedure:x", surface: "native", role: "member", availability: "available", build: "b1", locale: "en-US", steps: ["Launched"], result: "Home visible", hashes: [`sha256:${"a".repeat(64)}`]};
+  assert.ok(createEvidenceRecord({...base, adapter: "adb-android", verification: "live-capture", allowedClaims: ["Members see the home screen."]}));
+  assert.ok(createEvidenceRecord({...base, adapter: "simctl-ios", verification: "screenshot-only"}));
+  assert.throws(() => createEvidenceRecord({...base, adapter: "simctl-ios", verification: "screenshot-only", allowedClaims: ["Members see the home screen."]}));
+  assert.throws(() => createEvidenceRecord({...base, adapter: "simctl-ios", verification: "live-capture"}));
+  assert.throws(() => createEvidenceRecord({...base, adapter: "adb-android", verification: "screenshot-only"}));
+  assert.throws(() => createEvidenceRecord({...base, surface: "web", adapter: "playwright-web", verification: "screenshot-only"}));
+  assert.throws(() => createEvidenceRecord({...base, adapter: "adb-android", surface: "web", verification: "live-capture"}));
+});
