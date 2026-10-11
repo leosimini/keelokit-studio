@@ -4,6 +4,7 @@ import {mkdtemp, readFile, rm, stat} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {resolve} from "node:path";
 import test from "node:test";
+import {chromiumExecutable} from "./support/chromium.mjs";
 import {captureWebJourney, webCaptureCapability} from "../src/adapters/web-capture.mjs";
 
 const fixtureHtml = await readFile(resolve("fixtures/web-capture/index.html"));
@@ -27,7 +28,7 @@ function options(projectRoot, baseUrl, overrides = {}) {
     projectRoot,
     projectId: "web-fixture",
     baseUrl,
-    executablePath: "/usr/bin/chromium",
+    executablePath: chromiumExecutable,
     journey: {
       id: "save-task",
       name: "Save a task",
@@ -99,7 +100,7 @@ test("does not run or claim a disabled feature", async () => {
 });
 
 test("declares web-only capability and rejects external journey navigation", async () => {
-  assert.deepEqual(await webCaptureCapability({executablePath: "/usr/bin/chromium"}), {surface: "web", adapter: "playwright-web", status: "available", repeatable: true, native_support: false});
+  assert.deepEqual(await webCaptureCapability({executablePath: chromiumExecutable}), {surface: "web", adapter: "playwright-web", status: "available", repeatable: true, native_support: false});
   assert.equal((await webCaptureCapability({executablePath: "/does/not/exist"})).status, "blocked");
   const projectRoot = await mkdtemp(resolve(tmpdir(), "keelokit-studio-web-"));
   try {

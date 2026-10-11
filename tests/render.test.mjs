@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import test from "node:test";
+import {chromiumExecutable} from "./support/chromium.mjs";
 import {prepareRemotionRender, remotionRenderCapability, renderRemotionPreview, renderRemotionVideo, RenderAdapterError} from "../src/render/remotion-adapter.mjs";
 import {createMotionSpec} from "../src/agency/motion.mjs";
 import {createAgencyHandoff} from "../src/agency/handoff.mjs";
@@ -86,9 +87,9 @@ test("reports a blocked renderer instead of downloading an implicit browser", as
 });
 
 test("renders a real in-memory PNG preview without claiming QA", {timeout: 120000}, async (context) => {
-  const capability = await remotionRenderCapability({browserExecutable: "/usr/bin/chromium"});
+  const capability = await remotionRenderCapability({browserExecutable: chromiumExecutable});
   if (capability.status !== "available") return context.skip(capability.reason);
-  const result = await renderRemotionPreview({...input(), browserExecutable: "/usr/bin/chromium"});
+  const result = await renderRemotionPreview({...input(), browserExecutable: chromiumExecutable});
   assert.equal(result.artifact.content_type, "image/png");
   assert.ok(result.artifact.bytes.length > 1000);
   assert.match(result.artifact.sha256, /^[a-f0-9]{64}$/);
@@ -96,7 +97,7 @@ test("renders a real in-memory PNG preview without claiming QA", {timeout: 12000
 });
 
 test("renders a real timed MP4 from an explicit motion specification", {timeout: 120000}, async (context) => {
-  const capability = await remotionRenderCapability({browserExecutable: "/usr/bin/chromium"});
+  const capability = await remotionRenderCapability({browserExecutable: chromiumExecutable});
   if (capability.status !== "available") return context.skip(capability.reason);
   const treatmentHash = `sha256:${"2".repeat(64)}`;
   const versionedStoryboard = {...storyboard, storyboard_id: "storyboard-preview", version: 1, plan_id: "plan-preview", plan_version: 1, plan_hash: `sha256:${"d".repeat(64)}`, plan_scope: "plan-main", intent_type: "explainer", message: "Operators can complete the task.", language: "en-US", structure: ["promise"], evidence_ids: ["evidence-task"], preconditions: [], steps: [], structure_justification: "Single-scene render adapter test", treatment_hash: treatmentHash, narrative_copy: [], evidence_target: {feature_or_journey: "Complete task", surface: "web", role: "operator", build: "fixture-1", commit: null, locale: "en-US", flags: [], availability: "available"}, scenes: [{...storyboard.scenes[0], section: "promise", step: null, claims: [{claim: "Operators can complete the task.", evidence_id: "evidence-task"}]}]};
@@ -108,7 +109,7 @@ test("renders a real timed MP4 from an explicit motion specification", {timeout:
   const artifact = {strategy: {kind: "content-strategy", id: strategy.strategy_id, version: 1, hash: strategy.content_hash}, treatment: {kind: "creative-treatment", id: treatment.treatment_id, version: 1, hash: treatment.content_hash}, storyboard: {kind: "storyboard", id: versionedStoryboard.storyboard_id, version: 1, hash: contentHash(versionedStoryboard)}, motion: {kind: "motion-spec", id: motionSpec.motion_spec_id, version: 1, hash: motionSpec.content_hash}, requirements: {kind: "asset-requirements", id: `asset-requirements-${versionedStoryboard.storyboard_id}`, version: 1, hash: contentHash(requirements)}};
   const handoff = (fromRole, inputs, output, runId) => createAgencyHandoff({projectId: versionedStoryboard.project_id, fromRole, toRole: "editorial-critic", producer: `${fromRole}-agent`, runId, inputs, output, status: "ready", recordedAt: "2026-10-11T12:00:00.000Z"});
   const productionFlow = {strategy, treatment, assetRequirements: requirements, creativeHandoff: createAgencyHandoff({projectId: versionedStoryboard.project_id, fromRole: "creative-director", toRole: "storyboard-director", producer: "creative-agent", runId: "creative-1", inputs: [artifact.strategy], output: artifact.treatment, status: "ready", recordedAt: "2026-10-11T12:00:00.000Z"}), motionHandoff: handoff("motion-director", [artifact.treatment, artifact.storyboard], artifact.motion, "motion-1"), assetHandoff: handoff("asset-producer", [artifact.treatment, artifact.storyboard], artifact.requirements, "assets-1")};
-  const result = await renderRemotionVideo({...input({storyboard: versionedStoryboard}), motionSpec, productionFlow, browserExecutable: "/usr/bin/chromium"});
+  const result = await renderRemotionVideo({...input({storyboard: versionedStoryboard}), motionSpec, productionFlow, browserExecutable: chromiumExecutable});
   assert.equal(result.artifact.content_type, "video/mp4");
   assert.ok(result.artifact.bytes.length > 1000);
   assert.equal(result.manifest.configuration.motion_spec_id, motionSpec.motion_spec_id);
