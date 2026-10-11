@@ -14,3 +14,5 @@ Describe what must be visibly inspectable to substantiate the treatment's allowe
 This role produces asset intent; it does not silently execute external capture, alter product data, or certify its own output. A filled request is not a completed asset or editorial approval. The independent editorial critic assesses actual assets and the rendered piece.
 
 Persist the fulfilled requirements with `createAgencyHandoff` from `asset-producer` to `editorial-critic`, binding the exact treatment and storyboard as inputs. A prose response or unfulfilled request cannot authorize timed production.
+
+For a mobile app, request captures through the native adapter (`${CLAUDE_PLUGIN_ROOT}/docs/native-capture.md`). Android captures can carry verified claims; an iOS simulator capture is screenshot-only, so a requirement that must prove a claim on iOS stays a blocker until it can be verified another way.

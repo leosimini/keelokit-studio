@@ -10,7 +10,8 @@ Capabilities are declared by verified adapters. A missing adapter blocks only it
 - CLI and API evidence use reproducible commands or requests without inventing a graphical interface;
 - provided material is accepted with provenance-limited verification;
 - web capture uses a saved Playwright journey and verifies the observed result before allowing claims;
-- native and desktop support are not declared until their adapters are implemented and tested.
+- native mobile capture is provided by `adb-android` (results asserted from the UI hierarchy) and `simctl-ios` (screenshot-only, no claims); see `docs/native-capture.md`. It is contract-tested against stand-ins and not yet exercised on a real device;
+- desktop support is not declared until its adapter is implemented and tested.
 
 The web adapter requires a resolved Chromium executable and reports `blocked` when it cannot launch it. Capture uses an explicit request-origin allowlist (the application origin by default), requires a visible role assertion, and stores only sanitized failure messages. Playwright is a pinned runtime dependency in the self-contained plugin archive; no browser binary is downloaded or bundled implicitly.
 
