@@ -20,6 +20,7 @@ C02 — agency workflow.
 | C02-02 | verified | intake asks only uncovered scope deltas and persists hash-bound decisions without expanding unrelated blockers |
 | C02-03 | verified | project-defined audiences and a versioned sourced brief preserve explicit tone/voice confirmation and material review fields |
 | C02-04 | verified | objective-led suites validate brief scope, evidence needs, execution order, dependency graphs, costs, pending work, and exclusions |
+| C02-05 | verified | review subjects derive plan scope, bind exact documents and relevant audiences, expose material fields, and record explicit approval or revocation |
 
 ## Verification ledger
 
@@ -45,6 +46,8 @@ C02 — agency workflow.
 - Independent C02-03 review found rejected-audience, duplicate/reference, renderer-bypass, and review-omission defects; all were fixed and the reviewer confirmed no remaining P1/P2 findings.
 - `node --test tests/plan.test.mjs`: pass; covers differing product plans, stable IDs, brief constraints, required fields, budgets, and suite/piece/effective dependency cycles.
 - Independent C02-04 review found five plan integrity defects plus a combined suite/piece deadlock; all were fixed and the reviewer confirmed no remaining P1/P2 findings.
+- `node --test tests/review.test.mjs`: pass; covers document-derived piece scope, exact presented version/hash, changes-requested revocation, relevant-audience snapshots, silence/cross-kind rejection, and complete plan review fields.
+- Independent C02-05 review found one unauthorized-piece P1 and five approval/review P2 defects; all were fixed and the reviewer confirmed no remaining P1/P2 findings.
 
 ## Blockers and limits
 
@@ -53,5 +56,5 @@ C02 — agency workflow.
 
 ## Next
 
-Implement C02-05 review views and exact version/hash approval recording.
+Implement C02-06 start/resume orchestration without repeating valid work.
 

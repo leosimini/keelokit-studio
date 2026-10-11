@@ -31,3 +31,7 @@ export function stableId(prefix, ...parts) {
   return `${prefix}-${digest}`;
 }
 
+export function contentHash(value) {
+  return `sha256:${createHash("sha256").update(JSON.stringify(canonical(value))).digest("hex")}`;
+}
+
