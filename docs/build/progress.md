@@ -17,6 +17,7 @@ C02 — agency workflow.
 | C01-03 | verified | guarded phase graph, persisted batch scope, per-piece plan/style gates, and selective component invalidation pass review |
 | C01-04 | verified | canonical IDs, consumer-only paths, scoped capability failures, and provenance limits pass tests and independent review |
 | C02-01 | verified | context/manual adapters preserve source path, observation time, build, classification, hash, and availability limits |
+| C02-02 | verified | intake asks only uncovered scope deltas and persists hash-bound decisions without expanding unrelated blockers |
 
 ## Verification ledger
 
@@ -36,6 +37,8 @@ C02 — agency workflow.
 - C01-04 independent review found a dangling-symlink escape, plugin-root output acceptance, and ambiguous non-JSON IDs. All were fixed and the complete 35-test suite passes.
 - `node --test tests/discovery.test.mjs`: pass; covers generic source provenance, contradictory/stale/missing classifications, build association, bounded manual reads, and negative availability rules in transient and persistent schemas.
 - Independent C02-01 review found three adapter/schema inconsistencies; envelope, build propagation, and README/backlog restrictions were fixed, then confirmed with no remaining P1/P2 findings.
+- `node --test tests/intake.test.mjs`: pass; covers two/three-question batches, scope-local blockers, accumulated scope decisions, restart persistence, and material-change revalidation by subject hash.
+- Independent C02-02 review found scope-union, stale-decision, and decision-ID defects; all were fixed and the reviewer confirmed no remaining P1/P2 findings.
 
 ## Blockers and limits
 
@@ -44,5 +47,5 @@ C02 — agency workflow.
 
 ## Next
 
-Implement C02-02 selective intake, persisted decisions, and scope-local gaps.
+Implement C02-03 generic audiences, brief, and tone/voice by relevant audience.
 

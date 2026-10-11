@@ -47,7 +47,8 @@
           "gap_id": {"type": "string", "minLength": 1},
           "description": {"type": "string", "minLength": 1},
           "impact": {"enum": ["blocking", "limited", "informational"]},
-          "owner": {"type": ["string", "null"]}
+          "owner": {"type": ["string", "null"]},
+          "scope_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
         }
       }
     }
