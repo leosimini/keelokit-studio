@@ -182,3 +182,19 @@ test("derives a cited guide from the same approved tutorial evidence without ove
   assert.match(renderGuideMarkdown(guide), /Evidence:/);
   assert.throws(() => createGuide({storyboard: {...storyboard, scenes: storyboard.scenes.slice(0, -2).concat(storyboard.scenes.at(-1))}, context, version: 1, title: "Incomplete"}), /timeline|retain|cover/);
 });
+
+test("exports WebVTT and SRT captions only from scene narration and timing", async () => {
+  const {renderStoryboardCaptions} = await import("../src/agency/storyboard.mjs");
+  const {createExportManifest} = await import("../src/qa/export.mjs");
+  const {input} = setup("explainer");
+  const storyboard = createStoryboard(input);
+  const vtt = renderStoryboardCaptions(storyboard, "vtt");
+  const srt = renderStoryboardCaptions(storyboard, "srt");
+  assert.match(vtt, /^WEBVTT\n\n1\n00:00:00\.000 --> /);
+  assert.match(srt, /^1\n00:00:00,000 --> /);
+  const source = {render_id: "render-x", storyboard_hash: `sha256:${"a".repeat(64)}`};
+  const manifest = createExportManifest({source, pieceId: storyboard.piece_id, requestedVariants: ["vtt", "srt"], artifacts: [{variant: "vtt", content_type: "text/vtt", bytes: Buffer.from(vtt)}, {variant: "srt", content_type: "application/x-subrip", bytes: Buffer.from(srt)}]});
+  assert.equal(manifest.status, "passed");
+  for (const scene of storyboard.scenes.filter(({narration}) => narration)) assert.ok(vtt.includes(scene.narration));
+  assert.throws(() => renderStoryboardCaptions(storyboard, "ass"), /Unsupported/);
+});

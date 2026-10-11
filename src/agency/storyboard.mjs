@@ -171,3 +171,18 @@ export function renderStoryboardScriptMarkdown(storyboard, context) {
   lines.push("", "## Call to action", "", inline(storyboard.cta), "");
   return lines.join("\n");
 }
+
+function timestamp(seconds, separator) {
+  const milliseconds = Math.round(seconds * 1000);
+  const part = (value, width) => String(value).padStart(width, "0");
+  return `${part(Math.floor(milliseconds / 3600000), 2)}:${part(Math.floor(milliseconds / 60000) % 60, 2)}:${part(Math.floor(milliseconds / 1000) % 60, 2)}${separator}${part(milliseconds % 1000, 3)}`;
+}
+
+// Captions come only from approved scene narration and its timing, so they cannot add copy the script did not validate.
+export function renderStoryboardCaptions(storyboard, format = "vtt") {
+  if (!["vtt", "srt"].includes(format)) throw new StoryboardValidationError([`Unsupported caption format ${format}`]);
+  const separator = format === "vtt" ? "." : ",";
+  const cues = storyboard.scenes.filter(({narration}) => narration).map(({start_seconds, end_seconds, narration}, index) => `${index + 1}\n${timestamp(start_seconds, separator)} --> ${timestamp(end_seconds, separator)}\n${narration}\n`);
+  if (cues.length === 0) throw new StoryboardValidationError(["The storyboard has no narration to caption"]);
+  return `${format === "vtt" ? "WEBVTT\n\n" : ""}${cues.join("\n")}`;
+}
