@@ -1,7 +1,7 @@
 import React from "react";
-import {AbsoluteFill, cancelRender, continueRender, delayRender, interpolate, Sequence, useCurrentFrame, useVideoConfig} from "remotion";
+import {AbsoluteFill, Audio, cancelRender, continueRender, delayRender, interpolate, Sequence, useCurrentFrame, useVideoConfig} from "remotion";
 import {Backdrop, BrowserFrame, CaptionBar, CursorHighlight, EndCard, FeatureFrame, PhoneFrame, ResultCard, StepLabel, TitleCard} from "./components.mjs";
-import {sceneLayout} from "./geometry.mjs";
+import {activeCue, musicVolume, sceneLayout} from "./geometry.mjs";
 
 const h = React.createElement;
 
@@ -32,6 +32,7 @@ function Scene({scene, theme, assetSources, assetDimensions, logoSrc, lead}) {
   const showsAsset = assetComponents.has(scene.component) && src && dims;
   // Browser and phone scenes show their copy as a label; a feature scene leads with it as a headline.
   const label = scene.component === "feature" ? scene.step_label : (scene.step_label ?? (assetComponents.has(scene.component) ? scene.on_screen_text : null));
+  const caption = scene.subtitle_cues?.length > 0 ? activeCue(scene.subtitle_cues, frame).text : scene.subtitle;
   const layout = sceneLayout({width, height, padding: theme.safe_padding, bodyPx: theme.body_px, subtitlePx: theme.subtitle_px, titlePx: theme.title_px, label, subtitle: scene.subtitle, panel: scene.component === "phone" && width > height * 1.2});
   const area = layout.stage;
   let content = null;
@@ -50,14 +51,22 @@ function Scene({scene, theme, assetSources, assetDimensions, logoSrc, lead}) {
   const pulseTransform = motion.emphasis === "pulse" ? `scale(${1 + Math.sin(frame / 4) * 0.01})` : "";
   const transform = `${entranceTransform} ${pulseTransform}`.trim() || "none";
   const focusOverlay = motion.emphasis === "focus" ? h(AbsoluteFill, {"data-motion": "focus", style: {pointerEvents: "none", background: "radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,0.5) 100%)"}}) : null;
-  return h(AbsoluteFill, {style: {opacity, transform}}, h(Backdrop, {theme}), content, focusOverlay, scene.highlight ? h(CursorHighlight, {...scene.highlight, theme}) : null, h(StepLabel, {text: label, theme, layout: layout.label, frame}), h(CaptionBar, {text: scene.subtitle, theme, layout: layout.subtitle}));
+  return h(AbsoluteFill, {style: {opacity, transform}}, h(Backdrop, {theme}), content, focusOverlay, scene.highlight ? h(CursorHighlight, {...scene.highlight, theme}) : null, h(StepLabel, {text: label, theme, layout: layout.label, frame}), h(CaptionBar, {text: caption, theme, layout: layout.subtitle}));
 }
 
-export function StudioComposition({scenes, theme, asset_sources: assetSources, asset_dimensions: assetDimensions = {}, logo_src: logoSrc}) {
+function Soundtrack({audio, total}) {
+  const music = audio?.music ?? null;
+  return h(React.Fragment, null,
+    ...(audio?.narration ?? []).map((entry) => h(Sequence, {key: `narration-${entry.scene_id}`, from: entry.from_frame, durationInFrames: entry.duration_frames}, h(Audio, {src: entry.src}))),
+    music ? h(Audio, {src: music.src, loop: true, volume: (frame) => musicVolume({frame, total, volume: music.volume, duck_volume: music.duck_volume, fade_in_frames: music.fade_in_frames, fade_out_frames: music.fade_out_frames, windows: music.windows})}) : null);
+}
+
+export function StudioComposition({scenes, theme, asset_sources: assetSources, asset_dimensions: assetDimensions = {}, audio = null, duration_in_frames: total = 0, logo_src: logoSrc}) {
   const fontFace = theme.font_src ? h("style", null, `@font-face{font-family:'KeelokitStudioPinnedFont';src:url('${theme.font_src}');font-display:block;}`) : null;
   return h(AbsoluteFill, {style: {backgroundColor: theme.background}}, h(PinnedFont, {src: theme.font_src ?? null}), fontFace,
     ...scenes.map((scene) => {
       const lead = scene.motion.transition?.type === "crossfade" ? scene.motion.transition.frames : 0;
       return h(Sequence, {key: scene.scene_id, from: scene.from_frame - lead, durationInFrames: scene.duration_frames + lead}, h(Scene, {scene, theme, assetSources, assetDimensions, logoSrc, lead}));
-    }));
+    }),
+    h(Soundtrack, {audio, total}));
 }

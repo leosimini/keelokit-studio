@@ -9,6 +9,7 @@ import {promisify} from "node:util";
 import {createAssetInventory} from "../assets/inventory.mjs";
 import {contentHash, stableId} from "../core/ids.mjs";
 import {imageDimensions} from "./geometry.mjs";
+import {AudioBindingError, prepareAudio, sceneCaptions} from "./audio.mjs";
 import {assertMotionSpecCurrent} from "../agency/motion.mjs";
 import {assertProductionHandoffs} from "../agency/production-flow.mjs";
 
@@ -61,13 +62,14 @@ function verifiedDataSources(inventory, assetSources) {
   const dimensions = Object.create(null);
   const known = new Set(inventory.assets.map(({asset_id}) => asset_id));
   const visualTypes = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+  const audioTypes = new Set(["audio/wav", "audio/mpeg", "audio/mp4"]);
   const fontTypes = new Set(["font/woff", "font/woff2", "font/ttf", "font/otf", "application/font-woff", "application/x-font-ttf", "application/vnd.ms-fontobject"]);
   for (const assetId of Object.keys(assetSources)) if (!known.has(assetId)) throw new RenderAdapterError(`Asset source ${assetId} is not present in the inventory`);
   for (const asset of inventory.assets) {
     if (!Object.hasOwn(assetSources, asset.asset_id)) continue;
     const match = dataUrl.exec(assetSources[asset.asset_id]);
     if (!match) throw new RenderAdapterError(`Asset source ${asset.asset_id} must be an embedded base64 data URL`);
-    const allowed = asset.kind === "font" ? fontTypes : visualTypes;
+    const allowed = asset.kind === "font" ? fontTypes : asset.kind === "audio" ? audioTypes : visualTypes;
     if (!allowed.has(match[1])) throw new RenderAdapterError(`Asset source ${asset.asset_id} has unsupported media type ${match[1]}`);
     const bytes = Buffer.from(match[2], "base64");
     if (createHash("sha256").update(bytes).digest("hex") !== asset.sha256) throw new RenderAdapterError(`Asset source ${asset.asset_id} does not match its inventory hash`);
@@ -143,6 +145,16 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
     const scene = storyboard.scenes.find(({scene_id}) => scene_id === sceneId);
     if (text !== "" && ![scene.narration, scene.on_screen_text].includes(text)) throw new RenderAdapterError(`renderConfig.subtitles.${sceneId} must equal the scene narration or on-screen text; free caption copy bypasses claim validation`);
   }
+  const captionsMode = renderConfig.captions ?? null;
+  if (captionsMode !== null && captionsMode !== "narration") throw new RenderAdapterError('renderConfig.captions must be "narration" (captions come from the approved narration) or be omitted');
+  if (captionsMode === "narration" && Object.keys(subtitles).length > 0) throw new RenderAdapterError("Use either renderConfig.captions or renderConfig.subtitles, not both");
+  let audioPlan;
+  try {
+    audioPlan = prepareAudio({storyboard, renderConfig, assetsById, sourceMap, mediaTypes, durationInFrames: Math.round(storyboard.duration_seconds * storyboard.fps)});
+  } catch (error) {
+    if (error instanceof AudioBindingError) throw new RenderAdapterError(error.message);
+    throw error;
+  }
   const scenes = storyboard.scenes.map((scene) => {
     const component = sceneComponents[scene.scene_id];
     if (!components.has(component)) throw new RenderAdapterError(`Scene ${scene.scene_id} requires a supported component selection`);
@@ -170,7 +182,7 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
       component,
       from_frame: Math.round(scene.start_seconds * storyboard.fps),
       duration_frames: Math.round(scene.end_seconds * storyboard.fps) - Math.round(scene.start_seconds * storyboard.fps),
-      subtitle: Object.hasOwn(subtitles, scene.scene_id) ? subtitles[scene.scene_id] : "",
+      ...(({subtitle, cues}) => ({subtitle, subtitle_cues: cues}))(sceneCaptions({scene, mode: captionsMode, subtitles, cueSource: audioPlan.cueSources.get(scene.scene_id) ?? null, fps: storyboard.fps})),
       step_label: Object.hasOwn(stepLabels, scene.scene_id) ? stepLabels[scene.scene_id] : null,
       highlight: Object.hasOwn(highlights, scene.scene_id) ? highlights[scene.scene_id] : null,
       motion: motionByScene.get(scene.scene_id) ?? staticMotion
@@ -186,8 +198,8 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
   const renderTheme = fontAssetId === null ? theme : {...theme, font_family: "KeelokitStudioPinnedFont", font_src: sourceMap[fontAssetId]};
   const durationInFrames = Math.round(storyboard.duration_seconds * storyboard.fps);
   if (durationInFrames < 1) throw new RenderAdapterError("Storyboard duration must occupy at least one frame");
-  const inputProps = {width: renderConfig.width, height: renderConfig.height, fps: storyboard.fps, duration_in_frames: durationInFrames, theme: renderTheme, scenes, asset_sources: sourceMap, asset_dimensions: assetDimensions, logo_src: logoId === null ? null : sourceMap[logoId]};
-  const selectedAssetIds = [...new Set(storyboard.scenes.flatMap(({asset_ids}) => asset_ids).concat(logoId ?? [], fontAssetId ?? []))].sort();
+  const inputProps = {width: renderConfig.width, height: renderConfig.height, fps: storyboard.fps, duration_in_frames: durationInFrames, theme: renderTheme, scenes, asset_sources: sourceMap, asset_dimensions: assetDimensions, audio: audioPlan.audio, logo_src: logoId === null ? null : sourceMap[logoId]};
+  const selectedAssetIds = [...new Set(storyboard.scenes.flatMap(({asset_ids}) => asset_ids).concat(logoId ?? [], fontAssetId ?? [], audioPlan.assetIds))].sort();
   for (const assetId of selectedAssetIds) {
     for (const dependency of assetsById.get(assetId).depends_on) {
       if (dependency.type === "evidence" && !evidenceSet.has(dependency.id)) throw new RenderAdapterError(`Asset ${assetId} references unknown evidence dependency ${dependency.id}`);
@@ -216,7 +228,7 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
     asset_states: assetStates,
     evidence_ids: selectedEvidence,
     evidence_hashes: evidenceHashes,
-    configuration: {width: renderConfig.width, height: renderConfig.height, fps: storyboard.fps, duration_in_frames: inputProps.duration_in_frames, motion_spec_id: motionSpec?.motion_spec_id ?? null, audio_tracks: 0, narration_audible: false, subtitled_scene_ids: scenes.filter(({subtitle}) => subtitle !== "").map(({scene_id}) => scene_id)},
+    configuration: {width: renderConfig.width, height: renderConfig.height, fps: storyboard.fps, duration_in_frames: inputProps.duration_in_frames, motion_spec_id: motionSpec?.motion_spec_id ?? null, ...audioPlan.summary, subtitled_scene_ids: scenes.filter(({subtitle}) => subtitle !== "").map(({scene_id}) => scene_id)},
     qa_status: "not-reviewed"
   };
   return {inputProps, manifest};

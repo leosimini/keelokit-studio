@@ -11,6 +11,8 @@ const defaultProps = {
   theme: {background: "#111111", foreground: "#ffffff", accent: "#5b8cff", surface: "#242424", subtitle_background: "#000000", font_family: "sans-serif", font_source: {type: "system", asset_id: null}, title_px: 30, body_px: 18, subtitle_px: 16, safe_padding: 18},
   scenes: [{scene_id: "default", component: "title", from_frame: 0, duration_frames: 30, on_screen_text: "Preview", asset_ids: [], subtitle: "", step_label: null, highlight: null}],
   asset_sources: {},
+  asset_dimensions: {},
+  audio: {narration: [], music: null},
   logo_src: null
 };
 

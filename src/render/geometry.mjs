@@ -136,3 +136,34 @@ export function readableOn(hex) {
   const channel = (index) => { const value = parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16) / 255; return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4; };
   return 0.2126 * channel(0) + 0.7152 * channel(1) + 0.0722 * channel(2) > 0.4 ? "#000000" : "#ffffff";
 }
+
+const normalizeText = (value) => value.replace(/\s+/g, " ").trim();
+
+// Groups aligned words into caption phrases (a pause at punctuation, or at most 7 words). Returns null if the words do not spell the narration exactly.
+export function captionCues(alignment, narration, fps) {
+  if (!Array.isArray(alignment) || alignment.length === 0) return null;
+  if (normalizeText(alignment.map(({text}) => text).join(" ")) !== normalizeText(narration)) return null;
+  const cues = [];
+  let current = [];
+  const flush = () => {
+    if (current.length === 0) return;
+    const from = Math.round(current[0].start_seconds * fps);
+    const previousEnd = cues.at(-1)?.to_frame ?? 0;
+    const start = Math.max(from, previousEnd);
+    cues.push({from_frame: start, to_frame: Math.max(start + 1, Math.round(current.at(-1).end_seconds * fps)), text: current.map(({text}) => text).join(" ")});
+    current = [];
+  };
+  for (const word of alignment) {
+    current.push(word);
+    if (current.length >= 7 || /[.!?;:,]$/.test(word.text)) flush();
+  }
+  flush();
+  return cues;
+}
+
+// The phrase to show at a frame: the latest cue that has started (the first cue before any has).
+export function activeCue(cues, frame) {
+  let active = cues[0];
+  for (const cue of cues) if (frame >= cue.from_frame) active = cue;
+  return active;
+}
