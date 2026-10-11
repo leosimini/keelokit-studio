@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "recipes": [
+    {
+      "recipe_id": "task-alternative-value-proof",
+      "version": 1,
+      "name": "Task → alternative → value → proof",
+      "evidence_class": "practice",
+      "source_ids": ["SRC-POSITIONING-DUNFORD", "SRC-USER-NEEDS-GOVUK"],
+      "applicable_objectives": ["discovery", "evaluation", "activation"],
+      "required_inputs": ["audience task", "current alternative", "differentiated capability", "customer value", "direct proof", "next step"],
+      "checks": ["Every differentiator connects an actual alternative to a relevant value", "The proof demonstrates the mechanism rather than repeating the promise", "Assumptions are labeled"],
+      "limitations": ["Professional framework, not a performance guarantee"]
+    },
+    {
+      "recipe_id": "coherent-signaled-demonstration",
+      "version": 1,
+      "name": "Coherent, signaled product demonstration",
+      "evidence_class": "research",
+      "source_ids": ["SRC-MULTIMEDIA-MAYER", "SRC-VIDEO-BRAME", "SRC-VIDEO-GUO"],
+      "applicable_objectives": ["evaluation", "activation", "use", "retention"],
+      "required_inputs": ["one viewer outcome", "meaningful segments", "visual proof per beat", "aligned narration", "application or next action"],
+      "checks": ["Each beat advances one idea", "Narration and visual proof are temporally aligned", "Decoration does not compete with the product action", "Duration is measured for the actual audience and channel"],
+      "limitations": ["Instructional-video evidence may not transfer directly to marketing outcomes", "No universal duration cap"]
+    },
+    {
+      "recipe_id": "accessible-motion-and-captions",
+      "version": 1,
+      "name": "Accessible motion and synchronized captions",
+      "evidence_class": "standard",
+      "source_ids": ["SRC-WCAG-MOTION", "SRC-WCAG-CAPTIONS"],
+      "applicable_objectives": ["discovery", "evaluation", "activation", "use", "retention", "news"],
+      "required_inputs": ["motion purpose", "reduced-motion treatment", "caption track", "caption review"],
+      "checks": ["No essential information is conveyed only through animation", "Qualifying motion can be reduced, paused, stopped or hidden", "Captions include speech and relevant audio and are terminology-reviewed"],
+      "limitations": ["Apply exact WCAG criterion scope and conformance level"]
+    },
+    {
+      "recipe_id": "hypothesis-publish-measure-refresh",
+      "version": 1,
+      "name": "Hypothesis → publish → measure → refresh",
+      "evidence_class": "research-and-operations",
+      "source_ids": ["SRC-EXPERIMENT-MICROSOFT", "SRC-YOUTUBE-RETENTION", "SRC-EDITORIAL-GOVUK"],
+      "applicable_objectives": ["discovery", "evaluation", "activation", "use", "retention", "news"],
+      "required_inputs": ["falsifiable hypothesis", "primary metric", "guardrails", "audience and assignment", "decision rule", "review owner and date"],
+      "checks": ["Hypothesis is distinct from observed outcome", "Null and inconclusive results remain visible", "Metrics are platform- and window-specific", "Publication and changes retain rationale and reviewer history"],
+      "limitations": ["Small samples may not support causal conclusions", "Platform retention does not equal conversion"]
+    }
+  ]
+}

@@ -16,6 +16,7 @@ test("foundation exposes the namespaced start command and orchestration skill", 
   const command = await readFile(new URL("../commands/start.md", import.meta.url), "utf8");
   const skill = await readFile(new URL("../skills/keelokit-studio/SKILL.md", import.meta.url), "utf8");
   const critic = await readFile(new URL("../agents/editorial-critic.md", import.meta.url), "utf8");
+  const strategist = await readFile(new URL("../agents/content-strategist.md", import.meta.url), "utf8");
   assert.match(command, /^---[\s\S]+description:/);
   assert.match(command, /environment-variable name or secret-manager reference/);
   assert.match(command, /never ask the user to paste a key, token, password/);
@@ -27,5 +28,7 @@ test("foundation exposes the namespaced start command and orchestration skill", 
   assert.match(critic, /^---[\s\S]+name: editorial-critic/m);
   assert.match(critic, /repetition without escalation is a failure/);
   assert.match(critic, /does not predict performance/);
+  assert.match(strategist, /^---[\s\S]+name: content-strategist/m);
+  assert.match(strategist, /Distinguish hypotheses from observed outcomes/);
 });
 
