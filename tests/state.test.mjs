@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {access, mkdir, mkdtemp, readFile, rm, symlink} from "node:fs/promises";
+import {access, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile} from "node:fs/promises";
 import {spawn} from "node:child_process";
 import {once} from "node:events";
 import {tmpdir} from "node:os";
@@ -206,3 +206,27 @@ test("roundtrips populated review and recovery state", async () => {
   });
 });
 
+
+test("never writes or reads state outside the project through a symlinked state location", async () => {
+  await withConsumer(async (root) => {
+    const outside = await mkdtemp(resolve(tmpdir(), "keelokit-outside-"));
+    try {
+      await symlink(outside, resolve(root, ".keelokit"), "dir");
+      await assert.rejects(() => initializeState(root, createInitialState("escape")), /outside the consumer project/);
+      assert.deepEqual(await readdir(outside), []);
+    } finally {
+      await rm(outside, {recursive: true, force: true});
+    }
+  });
+  await withConsumer(async (root) => {
+    const outside = await mkdtemp(resolve(tmpdir(), "keelokit-outside-"));
+    try {
+      await mkdir(resolve(root, ".keelokit/studio"), {recursive: true});
+      await writeFile(resolve(outside, "state.json"), "secret-outside-content");
+      await symlink(resolve(outside, "state.json"), resolve(root, ".keelokit/studio/state.json"));
+      await assert.rejects(() => loadState(root), (error) => /outside the consumer project/.test(error.message) && !/secret-outside/.test(error.message));
+    } finally {
+      await rm(outside, {recursive: true, force: true});
+    }
+  });
+});

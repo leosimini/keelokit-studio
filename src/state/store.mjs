@@ -2,6 +2,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 import {link, mkdir, readFile, realpath, rename, unlink, writeFile} from "node:fs/promises";
 import {dirname, isAbsolute, relative, resolve, sep} from "node:path";
 import {fileURLToPath} from "node:url";
+import {resolveConsumerPath} from "../core/paths.mjs";
 import {randomUUID} from "node:crypto";
 import {DatabaseSync} from "node:sqlite";
 
@@ -52,12 +53,13 @@ async function assertConsumerDestination(projectRoot) {
     }
   }
   const destination = statePath(canonicalRoot);
+  await resolveConsumerPath(canonicalRoot, ".keelokit/studio");
   await mkdir(dirname(destination), {recursive: true});
   const canonicalDirectory = await realpath(dirname(destination));
   if (isInside(canonicalDirectory, canonicalModuleRoot)) {
     throw new StateValidationError([{instancePath: "/project_root", message: "state directory must be outside the plugin installation"}]);
   }
-  return resolve(canonicalDirectory, "state.json");
+  return resolveConsumerPath(canonicalRoot, ".keelokit/studio/state.json");
 }
 
 export function createInitialState(projectId, now = new Date().toISOString()) {
