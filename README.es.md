@@ -24,7 +24,11 @@ explicarla. Es opinionado y joven; quedate con lo que te sirva.
 ## Qué podés producir
 
 - **Explainers y videos demo de producto.** Una promesa, un recorrido por el producto real y un
-  llamado a la acción, con guion escena por escena: narración, texto en pantalla y tiempos.
+  llamado a la acción, con guion escena por escena: narración, texto en pantalla y tiempos. El
+  video está diseñado, no solo armado: ventanas de navegador y de teléfono, movimientos de
+  cámara que recortan y hacen zoom a la parte de tu pantalla que prueba lo que se dice,
+  anotaciones y un cursor animado que siguen el zoom, fundidos, subtítulos, locución y música
+  opcionales, y una versión con movimiento reducido.
 - **Tutoriales.** Videos paso a paso que respetan los requisitos previos y el orden en que el
   producto realmente funciona.
 - **Guías escritas.** Guías tipo centro de ayuda, construidas con el mismo material verificado
@@ -141,8 +145,13 @@ claude --plugin-dir "$PWD"
 
 ## Para tener en cuenta
 
-- **Los videos todavía no tienen sonido.** La narración está en el guion y en los subtítulos
-  exportados, pero el MP4 no tiene pista de audio. El manifiesto del render lo declara.
+- **La narración necesita un proveedor de voz que configures vos.** Con uno, el video lleva una
+  locución atada al guion aprobado exacto, música con licencia opcional que se atenúa bajo la
+  voz, y subtítulos sincronizados con el habla. Sin proveedor, el video es mudo y lo declara.
+  Vienen dos proveedores (cualquier servicio con un endpoint de voz estilo OpenAI, y el comando
+  `say` de macOS para borradores gratis), pero ninguno se ejecutó contra el servicio real en mis
+  pruebas: escuchá una muestra antes de producir una pieza entera. Studio no puede juzgar cómo
+  suena una voz ni cómo pronuncia un nombre.
 - **La captura móvil es nueva y no pude probarla en hardware real.** Los adaptadores de Android
   e iOS están probados contra simulaciones de `adb` y `xcrun simctl`, no contra un emulador,
   dispositivo o simulador de verdad. Un comando revisa tu configuración en segundos

@@ -24,7 +24,11 @@ it. It is opinionated and young, so take what is useful.
 ## What you can make with it
 
 - **Explainer and product demo videos.** A promise, a walkthrough of the real product and a call
-  to action, scripted scene by scene with narration, on-screen text and timing.
+  to action, scripted scene by scene with narration, on-screen text and timing. The video itself
+  is designed, not just assembled: framed browser and phone windows, camera moves that crop and
+  zoom into the part of your screen that proves the point, callouts and an animated cursor that
+  follow the zoom, crossfades, captions, optional voiceover and music, and a reduced-motion
+  version.
 - **Tutorials.** Step-by-step videos that keep the prerequisites and the steps in the order your
   product actually requires.
 - **Written guides.** Help-center style guides built from the same verified material as the
@@ -141,8 +145,13 @@ claude --plugin-dir "$PWD"
 
 ## Good to know
 
-- **Videos have no sound yet.** Narration lives in the script and in exported captions, but the
-  MP4 has no audio track. The render manifest says so explicitly.
+- **Narration needs a voice provider you set up.** With one, the video gets a voiceover tied
+  to the exact approved script, optional licensed music that fades and lowers under the voice,
+  and captions timed to the speech. Without one, the video is silent and says so. Two
+  providers are included (any service with an OpenAI-style speech endpoint, and the macOS `say`
+  command for free drafts), but neither has been run against the real service in my testing,
+  so listen to a sample before producing a whole piece. Studio cannot judge how a voice
+  sounds or pronounces a name.
 - **Mobile capture is new and I could not test it on real hardware.** The Android and iOS
   adapters are tested against stand-ins for `adb` and `xcrun simctl`, not against a real
   emulator, device or simulator. A command checks your setup in seconds

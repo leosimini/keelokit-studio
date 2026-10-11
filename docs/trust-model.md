@@ -27,4 +27,4 @@ What is **not** enforced, and why:
 - Hash-bound records (handoffs, reviews, QA reports) are self-consistent, not signed.
 - The hook filter rejects invented figures and absolutes by pattern. It does not understand
   meaning; the evidence-bound claim check is the real gate for every other line of copy.
-- Rendered video has no audio track, so narration reaches viewers as captions only.
+- Narration audio is bound to the approved text it was generated from, but Studio cannot judge how a voice sounds, how it pronounces a name, or how loud the mix is: listen to every rendered piece.
