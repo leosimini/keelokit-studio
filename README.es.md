@@ -30,6 +30,9 @@ explicarla. Es opinionado y joven; quedate con lo que te sirva.
 - **Guías escritas.** Guías tipo centro de ayuda, construidas con el mismo material verificado
   que los videos, para que nunca se contradigan.
 - **Cortes para redes.** Adaptaciones cortas de la misma historia para cada canal y formato.
+- **Todos los idiomas que necesites.** Decile a Studio en qué idiomas querés y cada pieza se
+  produce en cada uno como su propia versión, con guion, subtítulos, evidencia y revisión
+  propios, renderizada con el mismo diseño de video.
 - **Material de producción que una persona puede usar.** Guiones en Markdown, la lista exacta de
   capturas y grabaciones que necesita cada escena, subtítulos en WebVTT y SRT, previews PNG, un
   render MP4 y paquetes por canal listos para que publiques a mano.
@@ -44,8 +47,8 @@ partir de ahí Studio sigue la misma secuencia que una buena agencia:
 1. **Entender el producto.** Lee tu README, docs, manuales y material de marca, y te dice qué
    falta o está desactualizado. Pregunta solo por los vacíos y nunca te pide pegar un secreto:
    si algo necesita una credencial, pide el nombre de la variable de entorno.
-2. **Definir para quién es y qué decir.** Define audiencias, mensaje y tono, y registra lo que
-   decidiste.
+2. **Definir para quién es y qué decir.** Define audiencias, mensaje y tono, pregunta en qué
+   idiomas lo querés, y registra lo que decidiste.
 3. **Planificar y priorizar.** Una estratega propone un conjunto de piezas, las ordena y explica
    por qué, citando tu propio material. Trata las "recetas" de marketing como hipótesis con
    fuentes, nunca como promesas de resultados.
@@ -88,6 +91,13 @@ solo a un prompt.
 - **Tu aplicación web en funcionamiento.** Con Playwright puede seguir un recorrido que definas,
   por ejemplo entrar con un rol y completar una tarea, y capturar pantallas como evidencia. Solo
   visita los orígenes que le permitas.
+- **Tu app móvil** (React Native, Expo o cualquier build nativa) en un dispositivo o emulador
+  Android, o en un simulador de iOS. En Android, Studio puede abrir la app, navegarla, escribir
+  datos de demo y confirmar lo que hay en pantalla, así que sus capturas pueden respaldar
+  afirmaciones de un guion. En iOS abre la app, sigue deep links y guarda las capturas; como las
+  herramientas del simulador no pueden leer la pantalla, esas capturas sirven como material de
+  video, no como prueba de una afirmación. Vos levantás el dispositivo e instalás el build antes;
+  el `/keelokit:run-local` de Keelokit hace justamente eso.
 - **Remotion** para renderizar previews y video MP4.
 - **Un proveedor de voz, si querés narración,** como integración opcional. Nunca recibe una clave
   por la conversación, solo el nombre de una variable de entorno.
@@ -133,9 +143,17 @@ claude --plugin-dir "$PWD"
 
 - **Los videos todavía no tienen sonido.** La narración está en el guion y en los subtítulos
   exportados, pero el MP4 no tiene pista de audio. El manifiesto del render lo declara.
-- **Solo aplicaciones web.** La captura de apps móviles nativas no está implementada. Para todo lo
-  demás podés aportar tus propias grabaciones, y Studio las trata como aportadas por vos, no como
-  verificadas.
+- **La captura móvil es nueva y no pude probarla en hardware real.** Los adaptadores de Android
+  e iOS están probados contra simulaciones de `adb` y `xcrun simctl`, no contra un emulador,
+  dispositivo o simulador de verdad. Un comando revisa tu configuración en segundos
+  (`scripts/studio-capture-native.mjs --capability android --serial <id>`), y una captura fallida
+  aparece como fallo, nunca como una afirmación incorrecta. Ver [`docs/native-capture.md`](docs/native-capture.md).
+- **Cualquier otra superficie** (apps de escritorio, etc.) no se captura. Podés aportar tus
+  propias grabaciones, y Studio las trata como aportadas por vos, no como verificadas.
+- **Cada idioma necesita su propia evidencia.** Un video en español se contrasta con capturas
+  tomadas con el producto en español; Studio nunca acepta como verificada una afirmación
+  traducida. Tampoco puede saber si la fuente que elegiste cubre los caracteres de un idioma:
+  revisá cada preview. Detalles en [`docs/localization.md`](docs/localization.md).
 - **Remotion tiene sus propios términos comerciales.** Studio es MIT y no los cambia; confirmá que
   tu organización es elegible antes de renderizar.
 - **Usa más tokens que un chat común,** porque varios agentes trabajan en cada pieza.

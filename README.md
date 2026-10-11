@@ -30,6 +30,9 @@ it. It is opinionated and young, so take what is useful.
 - **Written guides.** Help-center style guides built from the same verified material as the
   videos, so the two never disagree.
 - **Social cuts.** Short adaptations of the same story for each channel and format you choose.
+- **Every language you need.** Tell Studio which languages you want and each piece is produced
+  in each one as its own version, with its own script, captions, evidence and review, rendered
+  from the same video design.
 - **Production material a person can use.** Scripts as Markdown, the exact list of screenshots
   and recordings each scene needs, captions in WebVTT and SRT, PNG previews, an MP4 render, and
   channel packages ready for you to publish by hand.
@@ -46,7 +49,7 @@ From there Studio walks through the same sequence a good agency would:
    to paste a secret; if something needs a credential, it asks for the name of the environment
    variable.
 2. **Decide who it is for and what to say.** It defines the audiences, the message and the tone,
-   and records what you decided.
+   and asks which languages you want, then records what you decided.
 3. **Plan and prioritize.** A strategist proposes a set of pieces, ranks them, and explains why,
    citing your own material. It treats marketing "recipes" as hypotheses with sources, never as
    promises of results.
@@ -88,6 +91,12 @@ checks it, not just to a prompt.
 - **Your running web app.** Using Playwright it can follow a journey you define, such as logging
   in as a given role and completing a task, and capture screenshots as evidence. It only visits
   the origins you allow.
+- **Your mobile app** (React Native, Expo or any native build) on an Android device or emulator,
+  or an iOS simulator. On Android, Studio can open the app, tap through it, type demo data and
+  confirm what is on screen, so its captures can back claims in a script. On iOS it launches the
+  app, follows deep links and keeps the screenshots; because the simulator tools cannot read the
+  screen, those captures are used as footage, not as proof of a claim. You start the device and
+  install the build first; Keelokit's `/keelokit:run-local` does exactly that.
 - **Remotion** to render previews and MP4 video.
 - **A voice provider, if you want narration,** as an optional integration. It never receives a
   key through the conversation, only the name of an environment variable.
@@ -134,8 +143,17 @@ claude --plugin-dir "$PWD"
 
 - **Videos have no sound yet.** Narration lives in the script and in exported captions, but the
   MP4 has no audio track. The render manifest says so explicitly.
-- **Web apps only.** Capturing a native mobile app is not implemented. For anything else you can
-  contribute your own recordings, and Studio treats them as supplied by you, not as verified.
+- **Mobile capture is new and I could not test it on real hardware.** The Android and iOS
+  adapters are tested against stand-ins for `adb` and `xcrun simctl`, not against a real
+  emulator, device or simulator. A command checks your setup in seconds
+  (`scripts/studio-capture-native.mjs --capability android --serial <id>`), and a failed capture
+  shows up as a failure, never as a wrong claim. See [`docs/native-capture.md`](docs/native-capture.md).
+- **Anything else** (desktop apps, other surfaces) is not captured. You can contribute your own
+  recordings, and Studio treats them as supplied by you, not as verified.
+- **Each language needs its own evidence.** A Spanish video is checked against captures taken
+  with the product in Spanish; Studio never accepts a translated claim as verified. It also
+  cannot tell whether your chosen font covers a language's characters, so check each preview.
+  Details in [`docs/localization.md`](docs/localization.md).
 - **Remotion has its own commercial terms.** Studio is MIT-licensed and does not change that;
   check that your organization is eligible before rendering.
 - **It uses more tokens than a single chat,** because several agents work on each piece.
