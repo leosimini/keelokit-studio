@@ -3,10 +3,14 @@ import test from "node:test";
 import {addApproval, createInitialState} from "../src/state/store.mjs";
 import {createPieceState, setCurrentSubject} from "../src/state/transitions.mjs";
 import {createPilotReview, persistPilotSubject, recordStyleOutcome, selectPilotSet, styleGate, PilotError} from "../src/agency/pilot.mjs";
+import {createEditorialReview, editorialDimensions} from "../src/agency/editorial-review.mjs";
 
 const planHash = `sha256:${"a".repeat(64)}`;
 const approval = {approval_id: "approval-plan", kind: "plan", scope: "plan-main", confirmed_by: "owner", confirmed_at: "2026-10-11T12:00:00.000Z", subject_version: 1, subject_hash: planHash, explicit_method: "conversation", status: "approved"};
-const candidate = (piece_id, style_signature, fill) => ({piece_id, style_signature, preview_artifact_id: `preview-${piece_id}`, preview_hash: `sha256:${fill.repeat(64)}`});
+const candidate = (piece_id, style_signature, fill) => ({piece_id, style_signature, storyboard_id: `storyboard-${piece_id}`, storyboard_version: 1, storyboard_hash: `sha256:${"e".repeat(64)}`, preview_artifact_id: `preview-${piece_id}`, preview_hash: `sha256:${fill.repeat(64)}`});
+const scores = Object.fromEntries(editorialDimensions.map((dimension) => [dimension, 4]));
+const editorial = (item) => createEditorialReview({projectId: "project-one", pieceId: item.piece_id, storyboardId: item.storyboard_id, storyboardVersion: item.storyboard_version, storyboardHash: item.storyboard_hash, previewArtifactId: item.preview_artifact_id, previewHash: item.preview_hash, reviewer: "independent-editor", reviewedAt: "2026-10-11T12:05:00.000Z", scores, attempts: ["Tried to disprove progression"], limits: ["No performance data"]});
+const review = (state, candidates, options = {}) => createPilotReview({state, candidates, editorialReviews: candidates.map(editorial), ...options});
 
 function planned(approved = true) {
   let state = createInitialState("project-one");
@@ -27,29 +31,45 @@ test("blocks unapproved and out-of-scope pilot work", () => {
 
 test("binds explicit style approval to exact pilot previews and covered scope", () => {
   const state = planned();
-  const result = createPilotReview({state, candidates: [candidate("piece-a", "one", "b"), candidate("piece-b", "one", "c")], scope: "style-main", version: 1});
+  const candidates = [candidate("piece-a", "one", "b"), candidate("piece-b", "one", "c")];
+  const result = review(state, candidates, {scope: "style-main", version: 1});
   let persisted = persistPilotSubject(state, "style", result.subject);
   persisted.pieces[0].style_subject = "style";
   persisted.pieces[1].style_subject = "style";
   persisted = recordStyleOutcome(persisted, {subjectKey: "style", expectedSubject: result.subject, outcome: "approved", confirmedBy: "owner", explicitMethod: "dashboard"});
   assert.deepEqual(styleGate(persisted, ["piece-a", "piece-b"]), {status: "ready", failures: []});
 
-  const changed = createPilotReview({state, candidates: [candidate("piece-a", "one", "f"), candidate("piece-b", "one", "c")], scope: "style-main", version: 2});
+  const changedCandidates = [candidate("piece-a", "one", "f"), candidate("piece-b", "one", "c")];
+  const changed = review(state, changedCandidates, {scope: "style-main", version: 2});
   const stale = persistPilotSubject(persisted, "style", changed.subject);
   assert.equal(styleGate(stale, ["piece-a"]).status, "blocked");
 });
 
 test("requested changes revoke the exact style subject and require comments", () => {
-  const result = createPilotReview({state: planned(), candidates: [candidate("piece-a", "one", "b")], scope: "style-main", version: 1});
-  const state = persistPilotSubject(planned(), "style", result.subject);
-  assert.throws(() => recordStyleOutcome(state, {subjectKey: "style", expectedSubject: result.subject, outcome: "changes_requested", confirmedBy: "owner", explicitMethod: "conversation"}), /comments/);
-  const changed = recordStyleOutcome(state, {subjectKey: "style", expectedSubject: result.subject, outcome: "changes_requested", confirmedBy: "owner", explicitMethod: "conversation", comments: ["Increase contrast"]});
+  const state = planned();
+  const candidates = [candidate("piece-a", "one", "b")];
+  const result = review(state, candidates, {scope: "style-main", version: 1});
+  const persisted = persistPilotSubject(state, "style", result.subject);
+  assert.throws(() => recordStyleOutcome(persisted, {subjectKey: "style", expectedSubject: result.subject, outcome: "changes_requested", confirmedBy: "owner", explicitMethod: "conversation"}), /comments/);
+  const changed = recordStyleOutcome(persisted, {subjectKey: "style", expectedSubject: result.subject, outcome: "changes_requested", confirmedBy: "owner", explicitMethod: "conversation", comments: ["Increase contrast"]});
   assert.equal(styleGate(changed, ["piece-a"]).status, "blocked");
 });
 
 test("binds style coverage changes into the approval hash", () => {
   const state = planned();
-  const first = createPilotReview({state, candidates: [candidate("piece-a", "one", "b")], scope: "style-main", version: 1});
-  const expanded = createPilotReview({state, candidates: [candidate("piece-a", "one", "b"), candidate("piece-b", "one", "c")], scope: "style-main", version: 1});
+  const firstCandidates = [candidate("piece-a", "one", "b")];
+  const expandedCandidates = [candidate("piece-a", "one", "b"), candidate("piece-b", "one", "c")];
+  const first = review(state, firstCandidates, {scope: "style-main", version: 1});
+  const expanded = review(state, expandedCandidates, {scope: "style-main", version: 1});
   assert.notEqual(first.subject.hash, expanded.subject.hash);
+});
+
+test("blocks style review without a current passing editorial report", () => {
+  const state = planned();
+  const item = candidate("piece-a", "one", "b");
+  assert.throws(() => createPilotReview({state, candidates: [item], editorialReviews: [], scope: "style-main", version: 1}), /editorial report/);
+  const failed = createEditorialReview({projectId: "project-one", pieceId: item.piece_id, storyboardId: item.storyboard_id, storyboardVersion: 1, storyboardHash: item.storyboard_hash, previewArtifactId: item.preview_artifact_id, previewHash: item.preview_hash, reviewer: "critic", reviewedAt: "2026-10-11T12:05:00.000Z", scores: {...scores, progression: 1}, findings: [{severity: "blocking", dimension: "progression", location: "scene 2", problem: "Repeats scene 1", consequence: "No narrative advance", revision: "Show the evidenced mechanism"}]});
+  assert.throws(() => createPilotReview({state, candidates: [item], editorialReviews: [failed], scope: "style-main", version: 1}), /changes_requested/);
+  const stale = editorial({...item, preview_hash: `sha256:${"f".repeat(64)}`});
+  assert.throws(() => createPilotReview({state, candidates: [item], editorialReviews: [stale], scope: "style-main", version: 1}), /stale/);
 });

@@ -15,11 +15,17 @@ test("plugin and local marketplace describe the same package", () => {
 test("foundation exposes the namespaced start command and orchestration skill", async () => {
   const command = await readFile(new URL("../commands/start.md", import.meta.url), "utf8");
   const skill = await readFile(new URL("../skills/keelokit-studio/SKILL.md", import.meta.url), "utf8");
+  const critic = await readFile(new URL("../agents/editorial-critic.md", import.meta.url), "utf8");
   assert.match(command, /^---[\s\S]+description:/);
   assert.match(command, /environment-variable name or secret-manager reference/);
   assert.match(command, /never ask the user to paste a key, token, password/);
   assert.match(skill, /^---[\s\S]+name: keelokit-studio/m);
   assert.match(skill, /Silence is not approval/);
   assert.match(skill, /never request or persist secret values/);
+  assert.match(command, /editorial-critic/);
+  assert.match(skill, /Never let the author grade its own script/);
+  assert.match(critic, /^---[\s\S]+name: editorial-critic/m);
+  assert.match(critic, /repetition without escalation is a failure/);
+  assert.match(critic, /does not predict performance/);
 });
 

@@ -16,16 +16,18 @@ Operate as a product-marketing agency for the current project.
 4. Reuse persisted decisions, subjects, approvals, pieces, and jobs. Query uncertain jobs before retrying and revalidate only materially changed fields.
 5. For external capabilities required by the active scope, confirm provider/configuration, cost limits, and capability-check permission during intake. Request only an environment-variable name or secret-manager reference for authentication; never request or persist secret values. Skip integrations irrelevant to the active scope and retain unavailable providers as scoped gaps.
 6. Follow the returned lifecycle action: create evidence-bound storyboards, optional voice jobs, measured previews, pilot/style review, batch production, export QA, guides and proposal-only distribution packages as the current approved scope requires.
-7. Load only selected evidence, assets and documents for the active piece. Use the selector → composer → independent reviewer separation; render completion is never QA approval.
-8. State which surface capabilities are available. Web capture is verified; native or other unconfigured surfaces must remain blocked rather than being simulated through a browser.
-9. Launch the persistent dashboard when the user needs suite progress, blockers, previews, exports, history or manual publication annotations. Publication is never inferred from `ready`.
-10. Keep output in the consumer project. Never write campaign state or generated assets into this plugin's installation directory.
+7. After a representative script and preview exist, invoke the read-only `editorial-critic` agent with the exact brief, plan, audience, channel, evidence, storyboard, script, assets and preview revision. Persist its report. Do not request style approval or start batch production while its verdict is `CHANGES REQUESTED` or `NOT REVIEWABLE`; rerun it after any material script, asset, channel, duration or CTA change.
+8. Load only selected evidence, assets and documents for the active piece. Use the selector → composer → independent reviewer separation; render completion is never QA approval.
+9. State which surface capabilities are available. Web capture is verified; native or other unconfigured surfaces must remain blocked rather than being simulated through a browser.
+10. Launch the persistent dashboard when the user needs suite progress, blockers, previews, exports, history or manual publication annotations. Publication is never inferred from `ready`.
+11. Keep output in the consumer project. Never write campaign state or generated assets into this plugin's installation directory.
 
 ## Invariants
 
 - Model audiences from project evidence and user confirmation; do not assume fixed roles, industries, markets, or channels.
 - Ask only for relevant missing information, in short groups.
 - Never place raw credentials in prompts, state, evidence, logs, dashboards, or generated artifacts.
+- Never let the author grade its own script. Editorial critique, owner style approval, factual verification, mechanical QA, and performance measurement are distinct checks.
 - Require explicit, version-bound approval before production. Silence is not approval.
 - Separate production from verification and publication.
 - Never fabricate interfaces, product results, metrics, testimonials, or supported platform capabilities.

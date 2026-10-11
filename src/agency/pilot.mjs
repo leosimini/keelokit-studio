@@ -2,6 +2,7 @@ import {randomUUID} from "node:crypto";
 import {contentHash, stableId} from "../core/ids.mjs";
 import {addApproval, assertValidState, hasCurrentApproval} from "../state/store.mjs";
 import {setCurrentSubject} from "../state/transitions.mjs";
+import {assertEditorialReviewCurrent} from "./editorial-review.mjs";
 
 export class PilotError extends Error {}
 
@@ -25,12 +26,18 @@ export function selectPilotSet({state, planSubjectKey = "plan", candidates}) {
   return [...selected.values()].sort((left, right) => left.style_signature.localeCompare(right.style_signature));
 }
 
-export function createPilotReview({state, planSubjectKey = "plan", candidates, scope, version}) {
+export function createPilotReview({state, planSubjectKey = "plan", candidates, editorialReviews, scope, version}) {
   if (typeof scope !== "string" || !scope || !Number.isInteger(version) || version < 1) throw new PilotError("Pilot style scope and positive version are required");
+  if (!Array.isArray(editorialReviews)) throw new PilotError("Current editorial reviews are required before style review");
+  const reports = new Map(editorialReviews.map((report) => [report.piece_id, report]));
+  for (const candidate of candidates) {
+    try { assertEditorialReviewCurrent(reports.get(candidate.piece_id), candidate); } catch (error) { throw new PilotError(error.message); }
+  }
   const pieces = selectPilotSet({state, planSubjectKey, candidates});
   const plan = state.versions[planSubjectKey];
   const coveredPieceIds = [...new Set(candidates.map(({piece_id}) => piece_id))].sort();
-  const review = {project_id: state.project_id, scope, version, plan: {scope: plan.scope, version: plan.version, hash: plan.hash}, covered_piece_ids: coveredPieceIds, pilots: pieces};
+  const editorialReviewIds = coveredPieceIds.map((pieceId) => reports.get(pieceId).review_id);
+  const review = {project_id: state.project_id, scope, version, plan: {scope: plan.scope, version: plan.version, hash: plan.hash}, covered_piece_ids: coveredPieceIds, editorial_review_ids: editorialReviewIds, pilots: pieces};
   const subject = {kind: "style", project_id: state.project_id, scope, version, hash: contentHash(review), piece_ids: coveredPieceIds};
   return {review: {...review, review_id: stableId("pilot-review", review)}, subject};
 }
