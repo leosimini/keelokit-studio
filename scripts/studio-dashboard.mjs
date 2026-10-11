@@ -10,8 +10,13 @@ const arguments_ = process.argv.slice(2);
 const projectRoot = resolve(arguments_[0] ?? ".");
 const port = Number(arguments_[1] ?? 4317);
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("Usage: studio-dashboard <project-root> [port]");
+const allowedHosts = new Set([`127.0.0.1:${port}`, `localhost:${port}`]);
 const server = createServer(async (request, response) => {
   try {
+    // Defend against DNS rebinding and cross-site writes: only loopback Host/Origin, and JSON-only writes.
+    if (!allowedHosts.has(request.headers.host ?? "")) { response.statusCode = 403; response.end("Forbidden host"); return; }
+    if (request.headers.origin !== undefined && !allowedHosts.has(request.headers.origin.replace(/^https?:\/\//, ""))) { response.statusCode = 403; response.end("Forbidden origin"); return; }
+    if (request.method === "PUT" && !/^application\/json(;|$)/i.test(request.headers["content-type"] ?? "")) { response.statusCode = 415; response.end("Content-Type must be application/json"); return; }
     if (request.method === "GET" && request.url === "/") { response.setHeader("content-type", "text/html; charset=utf-8"); response.end(renderDashboardHtml(await loadDashboard(projectRoot))); return; }
     if (request.method === "GET" && request.url === "/api/dashboard") { response.setHeader("content-type", "application/json"); response.end(JSON.stringify(await loadDashboard(projectRoot))); return; }
     if (request.method === "GET" && request.url?.startsWith("/artifact?")) {
@@ -25,10 +30,11 @@ const server = createServer(async (request, response) => {
       const chunks = []; let size = 0;
       for await (const chunk of request) { size += chunk.length; if (size > 65536) throw new Error("Request body too large"); chunks.push(chunk); }
       const current = await loadDashboard(projectRoot);
-      const next = await saveDashboard(projectRoot, setPublication(current, JSON.parse(Buffer.concat(chunks).toString("utf8"))));
+      const next = await saveDashboard(projectRoot, setPublication(current, {...JSON.parse(Buffer.concat(chunks).toString("utf8")), updatedAt: new Date().toISOString()}));
       response.setHeader("content-type", "application/json"); response.end(JSON.stringify(next)); return;
     }
     response.statusCode = 404; response.end("Not found");
   } catch (error) { response.statusCode = 400; response.end(error.message); }
 });
+server.requestTimeout = 10000; server.headersTimeout = 5000;
 server.listen(port, "127.0.0.1", () => console.log(`Keelokit Studio dashboard: http://127.0.0.1:${port}`));

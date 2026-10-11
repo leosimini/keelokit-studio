@@ -3,6 +3,8 @@ import {createDashboard} from "./store.mjs";
 
 export class DashboardProjectionError extends Error {}
 
+const retiredSuiteId = "suite-retired";
+
 function eventFrom(update, event) {
   if (!event || typeof event.kind !== "string" || !event.kind || typeof event.status !== "string" || !event.status || typeof event.recorded_at !== "string" || Number.isNaN(Date.parse(event.recorded_at)) || new Date(event.recorded_at).toISOString() !== event.recorded_at || !event.details || typeof event.details !== "object" || Array.isArray(event.details)) throw new DashboardProjectionError("Production history events require kind, status, exact time and details");
   return {...structuredClone(event), revision_id: event.revision_id ?? stableId("revision", {pieceId: update.piece_id, kind: event.kind, status: event.status, recordedAt: event.recorded_at, details: event.details})};
@@ -31,9 +33,12 @@ export function projectDashboard({dashboard, plan, queue = null, pieceUpdates = 
     const history = [...(before?.history ?? [])];
     const knownEvents = new Set(history.map(({revision_id}) => revision_id));
     for (const raw of update?.events ?? []) { const event = eventFrom(update, raw); if (!knownEvents.has(event.revision_id)) { history.push(event); knownEvents.add(event.revision_id); } }
-    return {piece_id: piece.piece_id, suite_id: suite.suite_id, title: piece.intention, status: update?.status ?? before?.status ?? "draft", blockers: [...new Set(update?.blockers ?? before?.blockers ?? [])], previews: structuredClone(update?.previews ?? before?.previews ?? []), exports: structuredClone(update?.exports ?? before?.exports ?? []), history, publications: structuredClone(before?.publications ?? [])};
+    return {piece_id: piece.piece_id, suite_id: suite.suite_id, title: piece.intention, status: update?.status ?? (before?.status === "retired" ? "draft" : before?.status) ?? "draft", blockers: [...new Set(update?.blockers ?? before?.blockers ?? [])], previews: structuredClone(update?.previews ?? before?.previews ?? []), exports: structuredClone(update?.exports ?? before?.exports ?? []), history, publications: structuredClone(before?.publications ?? [])};
   });
-  const recommendations = (queue?.items ?? []).map(({candidate_id, piece_id, channel, position, status, blockers, selection_reason, recipe_ids, impact_hypothesis, observed_outcomes}) => ({candidate_id, piece_id, channel, position, status, blockers: [...blockers], selection_reason, recipe_ids: [...recipe_ids], impact_hypothesis, observed_outcomes: structuredClone(observed_outcomes)}));
-  const projected = createDashboard({projectId: plan.project_id, suites, pieces, recommendations, now});
+  const retiredIds = [...prior.keys()].filter((id) => !plannedIds.has(id));
+  const retired = retiredIds.map((id) => ({...structuredClone(prior.get(id)), suite_id: retiredSuiteId, status: "retired"}));
+  if (retired.length > 0) suites.push({suite_id: retiredSuiteId, title: "Retired from the plan", piece_ids: retiredIds});
+  const recommendations = !queue ? structuredClone(dashboard.recommendations ?? []) : queue.items.map(({candidate_id, piece_id, channel, position, status, blockers, selection_reason, recipe_ids, impact_hypothesis, observed_outcomes}) => ({candidate_id, piece_id, channel, position, status, blockers: [...blockers], selection_reason, recipe_ids: [...recipe_ids], impact_hypothesis, observed_outcomes: structuredClone(observed_outcomes)}));
+  const projected = createDashboard({projectId: plan.project_id, suites, pieces: [...pieces, ...retired], recommendations, now});
   return {...projected, revision: dashboard.revision};
 }

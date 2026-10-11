@@ -28,6 +28,8 @@ function assertDashboard(value) {
       if (publication.url !== null) {
         let parsed; try { parsed = new URL(publication.url); } catch { throw new DashboardError("Publication URL must be a valid HTTP(S) URL"); }
         if (!["http:", "https:"].includes(parsed.protocol) || !parsed.hostname) throw new DashboardError("Publication URL must be a valid HTTP(S) URL");
+        if (parsed.username || parsed.password) throw new DashboardError("Publication URL must not contain credentials");
+        for (const name of parsed.searchParams.keys()) if (/token|secret|key|sig|auth|password|session/i.test(name)) throw new DashboardError(`Publication URL query parameter ${name} looks like a secret and is not persisted`);
       }
       for (const [label, instant] of [["updated_at", publication.updated_at], ["published_at", publication.published_at]]) if (instant !== null && (Number.isNaN(Date.parse(instant)) || new Date(instant).toISOString() !== instant)) throw new DashboardError(`Publication ${label} must be an exact ISO 8601 instant`);
     }
