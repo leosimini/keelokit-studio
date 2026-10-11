@@ -58,3 +58,32 @@ test("queries uncertain provider jobs before any resubmission", async () => {
   assert.equal(resolved.provider_job_id, uncertain.artifact.provider_job_id);
   await assert.rejects(() => queryUncertainVoice({record: uncertain.artifact, provider: {}}), /do not resubmit automatically/);
 });
+
+test("never persists secrets from provider options or provider error text", async () => {
+  const base = {pieceId: "piece-one", sceneId: "scene-one", narration, provider: createDeterministicVoiceProvider()};
+  await assert.rejects(() => generateVoice({...base, config: {...config, options: {headers: {Authorization: "Bearer sk-OPT-456"}}}}), (error) => error.code === "secret_in_config" && !/sk-OPT/.test(error.message));
+  await assert.rejects(() => generateVoice({...base, config: {...config, options: {api_key: "sk-OPT-456"}}}), /secret_in_config|credential/);
+  const leaking = {capability: async () => ({status: "available"}), submit: async () => { throw new Error("401 for https://api.tts.test/v1?key=sk-LIVE-123"); }};
+  const {artifact} = await generateVoice({...base, config, provider: leaking});
+  assert.equal(artifact.status, "failed");
+  assert.doesNotMatch(JSON.stringify(artifact), /sk-LIVE-123/);
+});
+
+test("fails closed when a budget is set but the cost cannot be established", async () => {
+  const base = {pieceId: "piece-one", sceneId: "scene-one", narration, config};
+  const submit = async () => { throw new Error("must not be called"); };
+  for (const provider of [{capability: async () => ({status: "available"}), submit}, {capability: async () => ({status: "available"}), estimate: async () => ({}), submit}, {capability: async () => ({status: "available"}), estimate: async () => ({amount: Number.NaN, currency: "USD"}), submit}]) {
+    await assert.rejects(() => generateVoice({...base, provider, budget: {currency: "USD", remaining: 0.001}}), (error) => error.code === "budget_exceeded");
+  }
+});
+
+test("does not replay a failed provider result from cache", async () => {
+  let calls = 0;
+  const flaky = {capability: async () => ({status: "available"}), submit: async (request) => { calls += 1; if (calls === 1) throw new Error("transient"); return createDeterministicVoiceProvider().submit(request); }};
+  const cache = new Map();
+  const base = {pieceId: "piece-one", sceneId: "scene-one", narration, config, provider: flaky, cache};
+  assert.equal((await generateVoice(base)).artifact.status, "failed");
+  const second = await generateVoice(base);
+  assert.equal(second.cache_hit, false);
+  assert.equal(second.artifact.status, "succeeded");
+});

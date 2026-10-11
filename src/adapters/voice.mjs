@@ -22,6 +22,16 @@ function plainObject(value, label) {
   return structuredClone(value);
 }
 
+const secretKey = /key|token|secret|auth|password|credential|bearer/i;
+
+function assertNoSecretOptions(value, path = "config.options") {
+  if (!value || typeof value !== "object") return;
+  for (const [name, child] of Object.entries(value)) {
+    if (secretKey.test(name)) throw new VoiceAdapterError("secret_in_config", `${path}.${name} looks like a credential; pass the environment-variable name or secret-manager reference to the provider instead`);
+    assertNoSecretOptions(child, `${path}.${name}`);
+  }
+}
+
 function approvedNarration(narration) {
   if (!narration || typeof narration.text !== "string" || narration.text.trim().length === 0) throw new VoiceAdapterError("invalid_input", "narration text is required");
   if (!narration.approval || narration.approval.status !== "approved" || narration.approval.text_hash !== contentHash(narration.text)) {
@@ -31,6 +41,7 @@ function approvedNarration(narration) {
 }
 
 function requestIdentity({pieceId, sceneId, text, config}) {
+  assertNoSecretOptions(config.options ?? {});
   const normalized = {
     provider: config.provider,
     model: config.model,
@@ -97,18 +108,19 @@ export async function generateVoice({pieceId, sceneId, narration, config, provid
     const result = artifact({pieceId, sceneId, identity, response: {status: "unavailable", limitations: [capability.reason]}});
     return {artifact: result, cache_hit: false};
   }
-  if (budget.remaining !== null && typeof provider.estimate === "function") {
-    const estimate = await provider.estimate({text, configuration: identity.normalized});
-    if (estimate?.amount > budget.remaining || (budget.currency && estimate?.currency !== budget.currency)) throw new VoiceAdapterError("budget_exceeded", "voice request is outside the configured remaining budget");
+  if (budget.remaining !== null) {
+    const estimate = typeof provider.estimate === "function" ? await provider.estimate({text, configuration: identity.normalized}) : null;
+    const known = Number.isFinite(estimate?.amount) && estimate.amount >= 0 && (!budget.currency || estimate.currency === budget.currency);
+    if (!known || estimate.amount > budget.remaining) throw new VoiceAdapterError("budget_exceeded", "voice request cost is unknown or outside the configured remaining budget");
   }
   let response;
   try {
     response = await provider.submit({text, configuration: identity.normalized, request_hash: identity.requestHash});
   } catch (error) {
-    response = {status: "failed", limitations: [`Provider submission failed: ${error.message}`]};
+    response = {status: "failed", limitations: [`Provider submission failed (${typeof error?.code === "string" ? error.code : error?.name ?? "Error"}); provider error text is not persisted`]};
   }
   const result = artifact({pieceId, sceneId, identity, response});
-  if (["succeeded", "failed", "uncertain"].includes(result.status)) cache.set(identity.requestHash, structuredClone(result));
+  if (["succeeded", "uncertain"].includes(result.status)) cache.set(identity.requestHash, structuredClone(result));
   return {artifact: result, cache_hit: false};
 }
 
