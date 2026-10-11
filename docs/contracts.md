@@ -5,6 +5,7 @@ Keelokit Studio contracts use JSON Schema draft 2020-12 and carry `schema_versio
 The first contract set covers the references needed to connect discovery, audiences, evidence, assets, plans, and storyboards:
 
 - `project-context.json` owns source observations, surfaces, capabilities, and gaps.
+- `source-observations.schema.json` validates transient context/manual adapter output before accepted observations are incorporated into `project-context.json`.
 - `audiences.json` owns stable audience IDs and confirmed audience decisions.
 - `product-evidence.json` owns reproducible product evidence and allowed claims.
 - `assets.json` owns asset hashes and provenance. An asset without origin is invalid.

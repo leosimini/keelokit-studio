@@ -20,10 +20,20 @@
         "required": ["source_id", "location", "observed_at", "status"],
         "properties": {
           "source_id": {"type": "string", "minLength": 1},
+          "kind": {"enum": ["profile", "readme", "context", "prd", "completed-work", "changelog", "manual", "brand", "ui", "build", "environment", "journey", "backlog", "provided-material"]},
           "location": {"type": "string", "minLength": 1},
           "observed_at": {"type": "string", "minLength": 1},
-          "status": {"enum": ["confirmed", "inferred", "contradictory", "stale", "missing"]}
-        }
+          "build": {"type": ["string", "null"]},
+          "status": {"enum": ["confirmed", "inferred", "contradictory", "stale", "missing"]},
+          "content_hash": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+          "availability_evidence": {"enum": ["candidate", "none"]}
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"kind": {"enum": ["readme", "backlog"]}}, "required": ["kind"]},
+            "then": {"properties": {"availability_evidence": {"const": "none"}}}
+          }
+        ]
       }
     },
     "capabilities": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},

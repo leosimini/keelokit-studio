@@ -4,7 +4,7 @@ Updated: 2026-10-11.
 
 ## Active milestone
 
-C01 — contracts and state.
+C02 — agency workflow.
 
 | Story | Status | Evidence |
 | --- | --- | --- |
@@ -16,6 +16,7 @@ C01 — contracts and state.
 | C01-02 | verified | exclusive initialization, atomic revisioned state, exact approvals, crash-safe locking, and 12 state tests pass |
 | C01-03 | verified | guarded phase graph, persisted batch scope, per-piece plan/style gates, and selective component invalidation pass review |
 | C01-04 | verified | canonical IDs, consumer-only paths, scoped capability failures, and provenance limits pass tests and independent review |
+| C02-01 | verified | context/manual adapters preserve source path, observation time, build, classification, hash, and availability limits |
 
 ## Verification ledger
 
@@ -33,6 +34,8 @@ C01 — contracts and state.
 - Independent high-reasoning transition review reproduced approval and style-coverage bypasses; all were fixed and the reviewer confirmed no remaining P1/P2 regression.
 - `node --test tests/core.test.mjs`: pass; covers deterministic IDs, invalid JSON identities, traversal, resolved and dangling symlinks, plugin-root exclusion, scoped adapter failures, and non-graphical evidence.
 - C01-04 independent review found a dangling-symlink escape, plugin-root output acceptance, and ambiguous non-JSON IDs. All were fixed and the complete 35-test suite passes.
+- `node --test tests/discovery.test.mjs`: pass; covers generic source provenance, contradictory/stale/missing classifications, build association, bounded manual reads, and negative availability rules in transient and persistent schemas.
+- Independent C02-01 review found three adapter/schema inconsistencies; envelope, build propagation, and README/backlog restrictions were fixed, then confirmed with no remaining P1/P2 findings.
 
 ## Blockers and limits
 
@@ -41,5 +44,5 @@ C01 — contracts and state.
 
 ## Next
 
-Prepare C02 story records, then implement C02-01 context/manual adapters and source classification.
+Implement C02-02 selective intake, persisted decisions, and scope-local gaps.
 
