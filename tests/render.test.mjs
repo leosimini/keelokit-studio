@@ -10,6 +10,7 @@ import {createMotionSpec} from "../src/agency/motion.mjs";
 import {createAgencyHandoff} from "../src/agency/handoff.mjs";
 import {createAssetRequirements, fulfillAssetRequirement} from "../src/assets/requirements.mjs";
 import {contentHash} from "../src/core/ids.mjs";
+import {createExportManifest} from "../src/qa/export.mjs";
 
 const image = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64");
 const sha256 = createHash("sha256").update(image).digest("hex");
@@ -116,6 +117,8 @@ test("renders a real timed MP4 from an explicit motion specification", {timeout:
   assert.equal(result.artifact.content_type, "video/mp4");
   assert.ok(result.artifact.bytes.length > 1000);
   assert.equal(result.manifest.configuration.motion_spec_id, motionSpec.motion_spec_id);
+  const exported = createExportManifest({pieceId: versionedStoryboard.piece_id, requestedVariants: ["video"], artifacts: [{variant: "video", content_type: "video/mp4", bytes: result.artifact.bytes, probe: {decodable: true, width: 320, height: 180, duration_seconds: 1}}]});
+  assert.equal(exported.status, "passed", "a real Remotion MP4 must satisfy the structural container check");
 });
 
 test("requires a contiguous timeline, rejects unapproved assets and assets the chosen component would ignore", () => {
