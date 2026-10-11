@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "keelokit-studio",
+  "description": "Development marketplace for Keelokit Studio.",
+  "owner": {
+    "name": "Leopoldo Simini",
+    "url": "https://leopoldosimini.com"
+  },
+  "plugins": [
+    {
+      "name": "keelokit-studio",
+      "source": "./",
+      "description": "Plan and produce evidence-backed product marketing suites with explicit review and approval gates."
+    }
+  ]
+}
+
