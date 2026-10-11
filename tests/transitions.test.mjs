@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {addApproval, createInitialState, hasCurrentApproval} from "../src/state/store.mjs";
-import {createPieceState, invalidatePieces, setCurrentSubject, transitionEngagement, TransitionError} from "../src/state/transitions.mjs";
+import {createPieceState, invalidatePieces, setCurrentSubject, setPieceComponent, transitionEngagement, TransitionError} from "../src/state/transitions.mjs";
 
 const planHash = `sha256:${"a".repeat(64)}`;
 const styleHash = `sha256:${"b".repeat(64)}`;
@@ -176,3 +176,19 @@ test("refreshes build and manual dependencies without invalidating unrelated pie
   assert.equal(manual.pieces[0].components.voice, "valid");
 });
 
+
+test("piece components are advanced only through setPieceComponent and status is derived", () => {
+  let state = createInitialState("consumer-demo");
+  state.pieces.push(createPieceState("piece-a"));
+  const order = ["evidence", "capture", "script", "voice", "brand", "composition", "render"];
+  for (const component of order) state = setPieceComponent(state, "piece-a", component, "valid", {artifactHash: briefHash});
+  assert.equal(state.pieces[0].status, "rendered");
+  state = setPieceComponent(state, "piece-a", "qa", "valid", {artifactHash: briefHash});
+  assert.equal(state.pieces[0].status, "ready");
+  state = setPieceComponent(state, "piece-a", "render", "stale", {artifactHash: briefHash});
+  assert.equal(state.pieces[0].status, "stale");
+  assert.throws(() => setPieceComponent(state, "piece-a", "unknown", "valid", {artifactHash: briefHash}), TransitionError);
+  assert.throws(() => setPieceComponent(state, "piece-a", "qa", "valid", {}), /artifactHash/);
+  assert.throws(() => setPieceComponent(state, "piece-x", "qa", "valid", {artifactHash: briefHash}), /not persisted/);
+  assert.ok(state.events.some((event) => event.type === "piece.component" && event.details.component === "qa"));
+});

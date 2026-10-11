@@ -135,6 +135,32 @@ function assertReadyPieces(state, options) {
   }
 }
 
+const componentNames = Object.keys(createPieceState("template").components);
+
+function derivedStatus(piece) {
+  const {components} = piece;
+  if (Object.values(components).includes("stale")) return "stale";
+  if (components.render === "valid" && components.qa === "valid") return "ready";
+  if (components.render === "valid") return "rendered";
+  for (const [component, status] of [["composition", "composed"], ["script", "scripted"], ["capture", "captured"], ["evidence", "evidence_ready"]]) if (components[component] === "valid") return status;
+  return "draft";
+}
+
+// The only writer of a piece's component state: it records which artifact justified the change and derives the status.
+export function setPieceComponent(state, pieceId, component, status, {artifactHash} = {}, now = new Date().toISOString()) {
+  if (!componentNames.includes(component)) throw new TransitionError(`Unknown piece component ${component}`);
+  if (!["missing", "valid", "stale"].includes(status)) throw new TransitionError(`Unknown component status ${status}`);
+  if (typeof artifactHash !== "string" || !/^sha256:[a-f0-9]{64}$/.test(artifactHash)) throw new TransitionError("A component change requires the artifactHash that justifies it");
+  const next = structuredClone(state);
+  const piece = next.pieces.find((candidate) => candidate.piece_id === pieceId);
+  if (!piece) throw new TransitionError(`Piece ${pieceId} is not persisted`);
+  piece.components[component] = status;
+  piece.status = derivedStatus(piece);
+  next.events.push({event_id: randomUUID(), type: "piece.component", recorded_at: now, details: {piece_id: pieceId, component, status, artifact_hash: artifactHash}});
+  next.updated_at = now;
+  return assertValidState(next);
+}
+
 export function invalidatePieces(state, {changeId, changeType, pieceIds}, now = new Date().toISOString()) {
   if (!changeId) throw new StateValidationError([{instancePath: "/change_id", message: "must be provided"}]);
   const components = invalidationMap[changeType];
