@@ -23,7 +23,7 @@ C03 — identity, evidence, and capture.
 | C02-05 | verified | review subjects derive plan scope, bind exact documents and relevant audiences, expose material fields, and record explicit approval or revocation |
 | C02-06 | verified | start initializes once and resumes persisted decisions, approvals, renders, jobs, blockers, and material changes by active scope |
 | C03-01 | verified | sourced brand candidates, explicit conflicts/gaps, versioned confirmation state, and a standalone escaped HTML reference pass independent review |
-| C03-02 | pending | evidence compatibility by role/build/locale/feature |
+| C03-02 | verified | selected evidence and claims are mechanically gated by journey, role, build/commit, locale, complete flag state, and availability |
 | C03-03 | pending | repeatable web capture adapter and success/failure fixture |
 | C03-04 | pending | contributed-material ingest with provenance limits |
 | C03-05 | pending | project-local assets, hashes, and dependency tracking |
@@ -58,6 +58,8 @@ C03 — identity, evidence, and capture.
 - Independent C02-06 review found four re-entry/CLI defects plus one cross-scope refresh defect; all were fixed and the reviewer confirmed no remaining P1/P2 findings.
 - `node --test tests/brand.test.mjs`: pass; covers proposed/unconfirmed identity, source/asset/audience references, absent and conflicting extraction, duplicate roles/tokens, standalone HTML escaping, and CSS injection resistance.
 - Independent C03-01 review reproduced lost usage conflicts and an incomplete reference sheet; both were fixed, regression-tested, and confirmed closed with no remaining P1/P2 findings.
+- `node --test tests/evidence.test.mjs`: pass; covers selected claim authorization, exact role/build/commit/locale/flags, unavailable outcomes, strict inputs, stable IDs, and immutable results.
+- Independent C03-02 review reproduced incomplete flag matching, current-availability and array-input fail-open behavior; all were fixed and the reviewer confirmed 87/87 tests with no remaining P1/P2 findings.
 - Narrative/prompt research was assessed as non-authoritative design evidence. Mechanical evidence gates are queued for C03; selector/composer/reviewer work remains owned by C04 and is not described as model-validated.
 
 ## Blockers and limits
@@ -68,5 +70,5 @@ C03 — identity, evidence, and capture.
 
 ## Next
 
-Implement C03-02 evidence compatibility by role, build, locale, and feature.
+Implement C03-03 repeatable web capture with verified success and failure fixtures.
 
