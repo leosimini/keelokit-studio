@@ -34,7 +34,7 @@ test("resumes jobs, publication history and selective refresh across sessions", 
   await initializeDashboard(projectRoot, dashboard);
   state = await loadState(projectRoot); dashboard = await loadDashboard(projectRoot);
   assert.equal(preparePaidJob(state, {provider: "configured", operation: "voice", requestIdentity: {text: "approved"}, estimatedCost: 0.2, currency: "USD", maxAttempts: 2}).action, "query-required");
-  dashboard = await saveDashboard(projectRoot, setPublication(dashboard, {pieceId: "piece-a", reviewId: "review-one", channel: "configured", published: true, url: "https://example.test/a", updatedAt: "2026-10-11T13:00:00.000Z"}));
+  dashboard = await saveDashboard(projectRoot, setPublication(dashboard, {pieceId: "piece-a", reviewId: "review-one", channel: "configured", published: true, publishedAt: "2026-10-11T13:00:00.000Z", url: "https://example.test/a", updatedAt: "2026-10-11T13:00:00.000Z"}));
   state = invalidatePieces(state, {changeId: "build-two", changeType: "build", pieceIds: ["piece-b"]});
   state = (await saveState(projectRoot, state)).state;
   const resumedState = await loadState(projectRoot), resumedDashboard = await loadDashboard(projectRoot);
