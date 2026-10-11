@@ -15,6 +15,7 @@ C01 — contracts and state.
 | C01-01 | verified | six versioned schemas, cross-reference validator, two sector fixtures, and 7 contract tests pass |
 | C01-02 | verified | exclusive initialization, atomic revisioned state, exact approvals, crash-safe locking, and 12 state tests pass |
 | C01-03 | verified | guarded phase graph, persisted batch scope, per-piece plan/style gates, and selective component invalidation pass review |
+| C01-04 | verified | canonical IDs, consumer-only paths, scoped capability failures, and provenance limits pass tests and independent review |
 
 ## Verification ledger
 
@@ -30,6 +31,8 @@ C01 — contracts and state.
 - Independent high-reasoning review reproduced state-loss races in two discarded lock implementations. The final SQLite transaction lock closed those findings; the reviewer confirmed no remaining P1/P2 lock defect after raising the Node minimum.
 - `node --test tests/transitions.test.mjs`: pass; covers approval kind/version/hash, pilot membership, per-piece style coverage, publication separation, selective invalidation, and immutable invalidation rules.
 - Independent high-reasoning transition review reproduced approval and style-coverage bypasses; all were fixed and the reviewer confirmed no remaining P1/P2 regression.
+- `node --test tests/core.test.mjs`: pass; covers deterministic IDs, invalid JSON identities, traversal, resolved and dangling symlinks, plugin-root exclusion, scoped adapter failures, and non-graphical evidence.
+- C01-04 independent review found a dangling-symlink escape, plugin-root output acceptance, and ambiguous non-JSON IDs. All were fixed and the complete 35-test suite passes.
 
 ## Blockers and limits
 
@@ -38,5 +41,5 @@ C01 — contracts and state.
 
 ## Next
 
-Implement C01-04 deterministic IDs, safe consumer paths, capability detection, and actionable errors.
+Prepare C02 story records, then implement C02-01 context/manual adapters and source classification.
 
