@@ -1,6 +1,6 @@
 import Ajv2020 from "ajv/dist/2020.js";
 import {randomUUID} from "node:crypto";
-import {mkdir, readFile, rename, writeFile, unlink} from "node:fs/promises";
+import {link, mkdir, readFile, rename, writeFile, unlink} from "node:fs/promises";
 import {dirname, resolve} from "node:path";
 import {DatabaseSync} from "node:sqlite";
 import {readFile as readSchema} from "node:fs/promises";
@@ -54,7 +54,16 @@ export function createDashboard({projectId, suites, pieces, recommendations = []
 export async function initializeDashboard(projectRoot, dashboard) {
   assertDashboard(dashboard);
   const destination = await pathFor(projectRoot);
-  await writeFile(destination, `${JSON.stringify(dashboard, null, 2)}\n`, {flag: "wx", mode: 0o600});
+  const temporary = `${destination}.${process.pid}.${randomUUID()}.tmp`;
+  await writeFile(temporary, `${JSON.stringify(dashboard, null, 2)}\n`, {flag: "wx", mode: 0o600});
+  try {
+    await link(temporary, destination);
+  } catch (error) {
+    if (error.code === "EEXIST") throw new DashboardError(`Dashboard already exists at ${destination}`);
+    throw error;
+  } finally {
+    await unlink(temporary).catch(() => {});
+  }
   return destination;
 }
 
@@ -67,6 +76,11 @@ export async function saveDashboard(projectRoot, dashboard) {
   let temporary;
   try {
     database.exec("BEGIN IMMEDIATE");
+  } catch (error) {
+    database.close();
+    throw new DashboardError(`Dashboard is being updated: ${error.message}`);
+  }
+  try {
     const current = await loadDashboard(projectRoot);
     if (current.revision !== dashboard.revision) throw new DashboardError("Dashboard revision changed; reload before saving");
     const next = {...structuredClone(dashboard), revision: dashboard.revision + 1};

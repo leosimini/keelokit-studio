@@ -1,4 +1,5 @@
-import {lstat, realpath} from "node:fs/promises";
+import {constants} from "node:fs";
+import {lstat, open, realpath} from "node:fs/promises";
 import {dirname, isAbsolute, relative, resolve, sep} from "node:path";
 import {fileURLToPath} from "node:url";
 
@@ -43,3 +44,14 @@ export async function resolveConsumerPath(projectRoot, requestedPath) {
   return destination;
 }
 
+
+// Reads a project file without following a final symlink or blocking on a FIFO or device.
+export async function readRegularFile(path) {
+  const handle = await open(path, constants.O_RDONLY | constants.O_NONBLOCK | constants.O_NOFOLLOW);
+  try {
+    if (!(await handle.stat()).isFile()) throw new TypeError("Source must be a regular file");
+    return await handle.readFile();
+  } finally {
+    await handle.close();
+  }
+}

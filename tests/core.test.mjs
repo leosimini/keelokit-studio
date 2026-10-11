@@ -74,3 +74,21 @@ test("CLI, API, and provided material do not imply a graphical interface", () =>
   assert.deepEqual(assessSurface("provided-material").verification, "provenance-limited");
 });
 
+
+test("source readers reject FIFOs instead of hanging", async () => {
+  const {execFileSync} = await import("node:child_process");
+  const {mkdtemp, rm} = await import("node:fs/promises");
+  const {tmpdir} = await import("node:os");
+  const {resolve: resolvePath} = await import("node:path");
+  const {readManualExcerpt} = await import("../src/adapters/manual.mjs");
+  const {inspectContextSources} = await import("../src/adapters/context.mjs");
+  const root = await mkdtemp(resolvePath(tmpdir(), "keelokit-fifo-"));
+  try {
+    execFileSync("mkfifo", [resolvePath(root, "pipe.md")]);
+    const timeout = (promise) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error("HANG")), 3000))]);
+    await assert.rejects(() => timeout(readManualExcerpt({projectRoot: root, path: "pipe.md"})), /regular file/);
+    await assert.rejects(() => timeout(inspectContextSources({projectRoot: root, projectId: "p", observedAt: "2026-10-11T12:00:00.000Z", sources: [{kind: "readme", path: "pipe.md"}]})), /regular file/);
+  } finally {
+    await rm(root, {recursive: true, force: true});
+  }
+});

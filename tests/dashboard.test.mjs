@@ -124,3 +124,18 @@ test("publication annotations need a date and a ready piece", () => {
   const draft = sample(); draft.pieces[0].status = "draft";
   assert.throws(() => setPublication(draft, {...base, publishedAt: "2026-10-11T16:00:00.000Z"}), /only a ready piece/);
 });
+
+test("initialization is atomic and a locked dashboard reports a typed conflict", async () => {
+  const root = await mkdtemp(join(tmpdir(), "studio-dashboard-"));
+  const attempts = await Promise.allSettled([initializeDashboard(root, sample()), initializeDashboard(root, sample()), initializeDashboard(root, sample())]);
+  assert.equal(attempts.filter(({status}) => status === "fulfilled").length, 1);
+  for (const attempt of attempts.filter(({status}) => status === "rejected")) assert.match(attempt.reason.message, /already exists/);
+  const {DatabaseSync} = await import("node:sqlite");
+  const lock = new DatabaseSync(join(root, ".keelokit/studio/dashboard.json.lock.sqlite"));
+  lock.exec("BEGIN IMMEDIATE");
+  try {
+    await assert.rejects(() => saveDashboard(root, sample()), (error) => error.name === "Error" && /being updated/.test(error.message) && error.constructor.name === "DashboardError");
+  } finally {
+    lock.exec("ROLLBACK"); lock.close();
+  }
+});

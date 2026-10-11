@@ -1,7 +1,7 @@
 import {createHash} from "node:crypto";
 import {readFile} from "node:fs/promises";
 import {stableId} from "../core/ids.mjs";
-import {resolveConsumerPath} from "../core/paths.mjs";
+import {readRegularFile, resolveConsumerPath} from "../core/paths.mjs";
 
 export const sourceKinds = Object.freeze([
   "profile", "readme", "context", "prd", "completed-work", "changelog", "manual",
@@ -42,7 +42,7 @@ export async function inspectContextSources({projectRoot, projectId, observedAt,
     const path = await resolveConsumerPath(projectRoot, location);
     let content;
     try {
-      content = await readFile(path);
+      content = await readRegularFile(path);
     } catch (error) {
       if (error.code !== "ENOENT") throw error;
     }
