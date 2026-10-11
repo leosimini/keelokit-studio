@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import test from "node:test";
+import {mkdtemp, rm, writeFile} from "node:fs/promises";
+import {tmpdir} from "node:os";
+import {resolve} from "node:path";
 import {chromiumExecutable} from "./support/chromium.mjs";
 import {prepareRemotionRender, remotionRenderCapability, renderRemotionPreview, renderRemotionVideo, RenderAdapterError} from "../src/render/remotion-adapter.mjs";
 import {createMotionSpec} from "../src/agency/motion.mjs";
@@ -123,4 +126,17 @@ test("requires a contiguous timeline, rejects unapproved assets and assets the c
   assert.throws(() => prepareRemotionRender(input({storyboard: two({start_seconds: 0, end_seconds: 1}, {start_seconds: 1, end_seconds: 2}, 3), renderConfig: config})), /contiguous/);
   assert.throws(() => prepareRemotionRender(input({assets: {...assets, assets: [{...asset, approval: {status: "unapproved", review_id: "review-one"}}]}})), /unapproved/i);
   assert.throws(() => prepareRemotionRender(input({renderConfig: {...renderConfig, scene_components: {"scene-task": "title"}}})), /would not display/);
+});
+
+test("capability is blocked when the browser answers --version but cannot launch for Remotion", async () => {
+  const directory = await mkdtemp(resolve(tmpdir(), "keelokit-fake-browser-"));
+  try {
+    const fake = resolve(directory, "chromium");
+    await writeFile(fake, "#!/bin/sh\n[ \"$1\" = \"--version\" ] && { echo 'Chromium 1.0.0'; exit 0; }\nexit 1\n", {mode: 0o755});
+    const capability = await remotionRenderCapability({browserExecutable: fake});
+    assert.equal(capability.status, "blocked");
+    assert.match(capability.reason, /launch/);
+  } finally {
+    await rm(directory, {recursive: true, force: true});
+  }
 });

@@ -89,6 +89,10 @@ export async function remotionRenderCapability({browserExecutable}) {
     await access(browserExecutable, constants.X_OK);
     const version = await execFileAsync(browserExecutable, ["--version"], {timeout: 5000, maxBuffer: 1024 * 1024});
     if (!/Chrom(?:e|ium)/i.test(`${version.stdout}\n${version.stderr}`)) throw new Error("Not a Chromium-compatible browser");
+    const {openBrowser} = await import("@remotion/renderer");
+    const probe = await openBrowser("chrome", {browserExecutable, logLevel: "error"}).catch(() => null);
+    if (probe === null) return {status: "blocked", adapter: "remotion", version: "4.0.534", reason: "Configured browser executable answers --version but cannot launch for Remotion; use a headless-shell or Chrome for Testing build", licensing: "Remotion licensing eligibility must be confirmed by the installing organization"};
+    await probe.close({silent: true});
     return {status: "available", adapter: "remotion", version: "4.0.534", browser_executable: browserExecutable, outputs: ["png-preview", "mp4-video"], licensing: "Remotion licensing eligibility must be confirmed by the installing organization"};
   } catch {
     return {status: "blocked", adapter: "remotion", version: "4.0.534", reason: "Configured browser executable is unavailable", licensing: "Remotion licensing eligibility must be confirmed by the installing organization"};
