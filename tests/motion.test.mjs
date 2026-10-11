@@ -75,3 +75,19 @@ test("rejects cameras, callouts, cursors and transitions that cannot be rendered
   rejects((s) => { s[1].transition = {type: "crossfade", frames: 40}; }, /transition/);
   rejects((s) => { s[0].spin = true; }, /does not implement: spin/);
 });
+
+test("reduced motion removes every moving part while keeping the framing and the proof visible", async () => {
+  const {reduceMotion} = await import("../src/agency/motion.mjs");
+  const value = spec();
+  const reduced = value.scenes.map(reduceMotion);
+  for (const scene of reduced) {
+    assert.deepEqual([scene.entrance, scene.entrance_frames, scene.exit, scene.exit_frames, scene.emphasis === "pulse"], ["cut", 0, "cut", 0, false]);
+    assert.deepEqual(scene.transition, {type: "none", frames: 0});
+  }
+  assert.deepEqual(reduced[0].camera.start, value.scenes[0].camera.end, "the camera holds on its final framing");
+  assert.deepEqual(reduced[0].camera.end, value.scenes[0].camera.end);
+  assert.deepEqual(reduced[1].cursor.points.map(({x, y}) => [x, y]), [[0.6, 0.5], [0.6, 0.5]], "the cursor rests where it ends");
+  assert.equal(reduced[1].cursor.click_frame, null);
+  assert.equal(reduced[0].callouts.length, 1);
+  assert.notDeepEqual(reduceMotion(value.scenes[0]), value.scenes[0]);
+});

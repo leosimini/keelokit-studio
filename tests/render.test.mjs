@@ -339,3 +339,16 @@ function flowFor(options, template) {
   const handoff = (fromRole, inputs, output, runId) => createAgencyHandoff({projectId: options.storyboard.project_id, fromRole, toRole: "editorial-critic", producer: `${fromRole}-agent`, runId, inputs, output, status: "ready", recordedAt: "2026-10-11T12:00:00.000Z"});
   return {strategy, treatment, assetRequirements: fulfilled, creativeHandoff: artifact.creativeHandoff, motionHandoff: handoff("motion-director", [refs.treatment, refs.storyboard], refs.motion, "motion-1"), assetHandoff: handoff("asset-producer", [refs.treatment, refs.storyboard], refs.requirements, "assets-1")};
 }
+
+test("a reduced-motion render freezes the camera and drops transitions, and is a distinct render", () => {
+  const options = videoCase("en-US");
+  const moving = createMotionSpec({storyboard: options.storyboard, version: 1, rationale: "Zoom in", scenes: [{scene_id: "scene-task", entrance: "fade", entrance_frames: 4, emphasis: "pulse", exit: "fade", exit_frames: 3, focus: null, purpose: "Show the result up close", camera: {start: {x: 0.5, y: 0.5, zoom: 1}, end: {x: 0.3, y: 0.3, zoom: 2}, from_frame: 2, to_frame: 20, easing: "ease-in-out"}}]});
+  const full = prepareRemotionRender({...options, motionSpec: moving});
+  const calm = prepareRemotionRender({...options, motionSpec: moving, renderConfig: {...options.renderConfig, reduced_motion: true}});
+  assert.equal(full.manifest.configuration.reduced_motion, false);
+  assert.equal(calm.manifest.configuration.reduced_motion, true);
+  assert.notEqual(full.manifest.render_id, calm.manifest.render_id);
+  assert.deepEqual(calm.inputProps.scenes[0].motion.camera.start, {x: 0.3, y: 0.3, zoom: 2});
+  assert.deepEqual([calm.inputProps.scenes[0].motion.entrance, calm.inputProps.scenes[0].motion.exit, calm.inputProps.scenes[0].motion.emphasis], ["cut", "cut", "none"]);
+  assert.throws(() => prepareRemotionRender({...options, motionSpec: moving, renderConfig: {...options.renderConfig, reduced_motion: "yes"}}), /reduced_motion/);
+});

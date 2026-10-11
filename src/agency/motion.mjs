@@ -90,3 +90,16 @@ export function assertMotionSpecCurrent(spec, storyboard) {
   if (spec.motion_spec_id !== rebuilt.motion_spec_id || spec.content_hash !== rebuilt.content_hash) throw new MotionSpecError("Motion specification identity does not match its contents");
   return spec;
 }
+
+// The same scene without anything that moves: cuts instead of fades, the camera held on its final framing, the cursor at rest, no pulse and no crossfade.
+export function reduceMotion(scene) {
+  const last = scene.cursor?.points.at(-1);
+  return {
+    ...scene,
+    entrance: "cut", entrance_frames: 0, exit: "cut", exit_frames: 0,
+    emphasis: scene.emphasis === "pulse" ? "none" : scene.emphasis,
+    camera: scene.camera ? {...scene.camera, start: {...scene.camera.end}, from_frame: 0, to_frame: 1} : null,
+    cursor: last ? {points: [{x: last.x, y: last.y, frame: 0}, {x: last.x, y: last.y, frame: 1}], click_frame: null} : null,
+    transition: {type: "none", frames: 0}
+  };
+}

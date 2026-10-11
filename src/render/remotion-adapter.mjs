@@ -10,7 +10,7 @@ import {createAssetInventory} from "../assets/inventory.mjs";
 import {contentHash, stableId} from "../core/ids.mjs";
 import {imageDimensions} from "./geometry.mjs";
 import {AudioBindingError, prepareAudio, sceneCaptions} from "./audio.mjs";
-import {assertMotionSpecCurrent} from "../agency/motion.mjs";
+import {assertMotionSpecCurrent, reduceMotion} from "../agency/motion.mjs";
 import {assertProductionHandoffs} from "../agency/production-flow.mjs";
 
 const [brandSchema, storyboardSchema, evidenceSchema] = await Promise.all([
@@ -125,7 +125,9 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
   const assetsById = new Map(inventory.assets.map((asset) => [asset.asset_id, asset]));
   const sceneIds = storyboard.scenes.map(({scene_id}) => scene_id);
   if (motionSpec !== null) assertMotionSpecCurrent(motionSpec, storyboard);
-  const motionByScene = new Map((motionSpec?.scenes ?? []).map((scene) => [scene.scene_id, scene]));
+  if (renderConfig.reduced_motion !== undefined && typeof renderConfig.reduced_motion !== "boolean") throw new RenderAdapterError("renderConfig.reduced_motion must be true or false");
+  const reducedMotion = renderConfig.reduced_motion === true;
+  const motionByScene = new Map((motionSpec?.scenes ?? []).map((scene) => [scene.scene_id, reducedMotion ? reduceMotion(scene) : scene]));
   if (new Set(sceneIds).size !== sceneIds.length) throw new RenderAdapterError("Storyboard scene_id values must be unique");
   const orderedScenes = [...storyboard.scenes].sort((left, right) => left.start_seconds - right.start_seconds);
   for (let index = 0; index < orderedScenes.length; index += 1) {
@@ -228,7 +230,7 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
     asset_states: assetStates,
     evidence_ids: selectedEvidence,
     evidence_hashes: evidenceHashes,
-    configuration: {width: renderConfig.width, height: renderConfig.height, fps: storyboard.fps, duration_in_frames: inputProps.duration_in_frames, motion_spec_id: motionSpec?.motion_spec_id ?? null, ...audioPlan.summary, subtitled_scene_ids: scenes.filter(({subtitle}) => subtitle !== "").map(({scene_id}) => scene_id)},
+    configuration: {width: renderConfig.width, height: renderConfig.height, fps: storyboard.fps, duration_in_frames: inputProps.duration_in_frames, motion_spec_id: motionSpec?.motion_spec_id ?? null, reduced_motion: reducedMotion, ...audioPlan.summary, subtitled_scene_ids: scenes.filter(({subtitle}) => subtitle !== "").map(({scene_id}) => scene_id)},
     qa_status: "not-reviewed"
   };
   return {inputProps, manifest};
@@ -254,7 +256,7 @@ async function renderVideoFiles(entries, browserExecutable) {
     for (const [index, {prepared, options}] of entries.entries()) {
       const output = resolve(directory, `piece-${index}.mp4`);
       const composition = await selectComposition({serveUrl, id: "KeelokitStudioPiece", inputProps: prepared.inputProps, browserExecutable, logLevel: "error"});
-      await renderMedia({serveUrl, composition, inputProps: prepared.inputProps, browserExecutable, codec: "h264", outputLocation: output, logLevel: "error"});
+      await renderMedia({serveUrl, composition, inputProps: prepared.inputProps, browserExecutable, codec: "h264", pixelFormat: "yuv420p", crf: 16, x264Preset: "medium", colorSpace: "bt709", audioCodec: "aac", audioBitrate: "192k", outputLocation: output, logLevel: "error"});
       const bytes = await readFile(output);
       results.push({...prepared, artifact: {kind: "video", content_type: "video/mp4", bytes, sha256: createHash("sha256").update(bytes).digest("hex"), duration_seconds: options.storyboard.duration_seconds}});
     }
