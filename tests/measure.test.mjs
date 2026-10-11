@@ -38,3 +38,9 @@ test("rejects invalid timing and requires project constraints", () => {
   assert.throws(() => measureMedia({pieceId: "piece-one", artifact, constraints: null}), /constraints/);
   assert.throws(() => measureMedia({pieceId: "piece-one", artifact, captions: [{caption_id: "bad", start_seconds: 2, end_seconds: 1, text: "Bad", timing_source: "configured"}], constraints}), /Invalid caption/);
 });
+
+test("a video with no sampled frames or missing narration audio is a blocker, not a clean report", () => {
+  const constraints = {caption_tolerance_seconds: 0.2, safe_margin_px: 16, minimum_text_px: 14};
+  const report = measureMedia({pieceId: "piece-one", artifact: {artifact_id: "video-one", duration_seconds: 5, kind: "video", has_narration: true}, constraints});
+  assert.deepEqual(report.issues.map(({code}) => code).sort(), ["frame-coverage-missing", "narration-silent"]);
+});

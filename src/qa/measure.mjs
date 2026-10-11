@@ -74,6 +74,8 @@ export function measureMedia({pieceId, artifact, audio = null, alignment = null,
   const captionResult = checkCaptions(captions, alignment, audioMeasurement.duration_seconds ?? artifact.duration_seconds, constraints.caption_tolerance_seconds);
   const layoutResult = checkLayouts(layouts, constraints);
   issues.push(...captionResult.issues, ...layoutResult.issues);
+  if (artifact.kind === "video" && layouts.length === 0) issues.push(issue("frame-coverage-missing", "blocker", artifact.artifact_id, "No sampled frames were measured; a video that was never inspected frame by frame cannot be reported as clean"));
+  if (artifact.kind === "video" && audio === null && artifact.has_narration === true) issues.push(issue("narration-silent", "blocker", artifact.artifact_id, "The storyboard has narration but the video carries no measured audio"));
   const body = {
     schema_version: 1,
     piece_id: pieceId,
