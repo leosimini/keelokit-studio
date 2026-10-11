@@ -7,7 +7,7 @@ Verified on 2026-10-11.
 | Claude Code CLI | 2.1.296 | `claude plugin validate`, local marketplace install, and `--plugin-dir` inventory | verified for manifest, components, and loading |
 | Claude Code plugin layout | 2.1.296 | official plugin examples and strict validator | conventional manifest, commands, skills |
 | Keelokit | 0.9.1, commit `ae9966c4994438332a3ff5c1497ce499ae117c9b` | repository instructions, marketplace, packaging, and tests | compatible independent repository |
-| Node.js | 24.19.0 exercised; 22+ supported | local verification and Keelokit baseline | verification runtime |
+| Node.js | 24.19.0 exercised; 22.16+ required | local verification, Keelokit baseline, and stable `node:sqlite` interface | verification and state runtime |
 | Remotion | 4.0.534 observed | npm metadata and upstream licensing documentation | selected for C04; not integrated yet |
 
 ## Current limits

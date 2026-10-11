@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keelokit.com/studio/schemas/v1/state.schema.json",
+  "title": "Keelokit Studio engagement state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "state_revision", "project_id", "engagement_phase", "versions", "decisions", "approvals", "pieces", "costs", "jobs", "events", "updated_at"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "state_revision": {"type": "integer", "minimum": 0},
+    "project_id": {"type": "string", "minLength": 1},
+    "engagement_phase": {"enum": ["discovered", "interviewing", "brief_draft", "plan_draft", "awaiting_plan_approval", "pilot_in_progress", "awaiting_style_approval", "producing", "reviewing", "ready", "blocked"]},
+    "versions": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 1}
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decision_id", "topic", "value", "source", "recorded_at"],
+        "properties": {
+          "decision_id": {"type": "string", "minLength": 1},
+          "topic": {"type": "string", "minLength": 1},
+          "value": {},
+          "source": {"type": "string", "minLength": 1},
+          "recorded_at": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "approvals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["approval_id", "kind", "scope", "confirmed_by", "confirmed_at", "subject_version", "subject_hash", "explicit_method", "status"],
+        "properties": {
+          "approval_id": {"type": "string", "minLength": 1},
+          "kind": {"enum": ["brief", "plan", "style", "publication"]},
+          "scope": {"type": "string", "minLength": 1},
+          "confirmed_by": {"type": "string", "minLength": 1},
+          "confirmed_at": {"type": "string", "minLength": 1},
+          "subject_version": {"type": "integer", "minimum": 1},
+          "subject_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+          "explicit_method": {"enum": ["conversation", "file", "dashboard", "api"]},
+          "status": {"enum": ["approved", "revoked"]}
+        }
+      }
+    },
+    "pieces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["piece_id", "status"],
+        "properties": {
+          "piece_id": {"type": "string", "minLength": 1},
+          "status": {"enum": ["draft", "evidence_ready", "captured", "scripted", "composed", "rendered", "verified", "ready", "stale", "failed"]}
+        }
+      }
+    },
+    "costs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currency", "approved_limit", "known_total"],
+      "properties": {
+        "currency": {"type": ["string", "null"]},
+        "approved_limit": {"type": ["number", "null"], "minimum": 0},
+        "known_total": {"type": "number", "minimum": 0}
+      }
+    },
+    "jobs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["job_id", "provider", "operation", "request_hash", "status", "attempts", "known_cost"],
+        "properties": {
+          "job_id": {"type": "string", "minLength": 1},
+          "provider": {"type": "string", "minLength": 1},
+          "provider_job_id": {"type": ["string", "null"]},
+          "operation": {"type": "string", "minLength": 1},
+          "request_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+          "status": {"enum": ["prepared", "submitted", "uncertain", "running", "succeeded", "failed"]},
+          "attempts": {"type": "integer", "minimum": 0},
+          "known_cost": {"type": ["number", "null"], "minimum": 0}
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["event_id", "type", "recorded_at", "details"],
+        "properties": {
+          "event_id": {"type": "string", "minLength": 1},
+          "type": {"type": "string", "minLength": 1},
+          "recorded_at": {"type": "string", "minLength": 1},
+          "details": {"type": "object"}
+        }
+      }
+    },
+    "updated_at": {"type": "string", "minLength": 1}
+  }
+}
+
