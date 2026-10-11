@@ -1,3 +1,4 @@
+import {reviewSubject} from "../agency/review.mjs";
 import Ajv2020 from "ajv/dist/2020.js";
 import {readFile} from "node:fs/promises";
 import {resolve} from "node:path";
@@ -13,7 +14,7 @@ export class DistributionError extends Error {}
 
 export function createDistributionPlan({state, plan, audiences, planSubjectKey = "plan", version, packages, channelCapabilities}) {
   const subject = state?.versions?.[planSubjectKey];
-  if (!subject || subject.kind !== "plan" || subject.version !== plan.version || subject.hash !== contentHash({document: plan, audiences}) || !hasCurrentApproval(state, {kind: "plan", scope: subject.scope, subjectVersion: subject.version, subjectHash: subject.hash})) throw new DistributionError("Distribution requires the exact current approved plan and audiences");
+  if (!subject || subject.kind !== "plan" || subject.version !== plan.version || subject.hash !== reviewSubject({kind: "plan", scope: subject.scope, document: plan, audiences}).hash || !hasCurrentApproval(state, {kind: "plan", scope: subject.scope, subjectVersion: subject.version, subjectHash: subject.hash})) throw new DistributionError("Distribution requires the exact current approved plan and audiences");
   if (!Number.isInteger(version) || version < 1 || !Array.isArray(packages) || packages.length === 0 || !channelCapabilities || typeof channelCapabilities !== "object") throw new DistributionError("Version, packages and declared channel capabilities are required");
   const planned = new Map(plan.suites.flatMap(({pieces}) => pieces).map((piece) => [piece.piece_id, piece]));
   const statePieces = new Map(state.pieces.map((piece) => [piece.piece_id, piece]));

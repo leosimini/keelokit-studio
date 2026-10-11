@@ -22,7 +22,8 @@
           "scope": {"type": "string", "minLength": 1},
           "version": {"type": "integer", "minimum": 1},
           "hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
-          "piece_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+          "piece_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+          "editorial_review_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
         }
       }
     },

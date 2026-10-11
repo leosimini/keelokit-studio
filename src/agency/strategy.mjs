@@ -1,3 +1,4 @@
+import {hasCurrentApproval} from "../state/store.mjs";
 import {contentHash, stableId} from "../core/ids.mjs";
 import {reviewSubject} from "./review.mjs";
 import {selectRecipes} from "./recipes.mjs";
@@ -84,7 +85,12 @@ export function createContentStrategy({projectId, version, plan, audiences, plan
   return {...strategy, content_hash: contentHash(strategy)};
 }
 
-export function buildPublicationQueue({strategy, plan, planSubject, distributionPlan = null, state, dashboard}) {
+export function buildPublicationQueue({strategy, plan, audiences, planSubject, distributionPlan = null, state, dashboard}) {
+  const {content_hash: declaredHash, ...strategyBody} = strategy;
+  if (declaredHash !== contentHash(strategyBody)) throw new StrategyError("Strategy content hash does not match its contents");
+  const expectedSubject = reviewSubject({kind: "plan", scope: planSubject?.scope, document: plan, audiences});
+  if (["project_id", "scope", "version", "hash"].some((key) => planSubject?.[key] !== expectedSubject[key])) throw new StrategyError("Queue requires the exact current plan subject");
+  if (!hasCurrentApproval(state, {kind: "plan", scope: planSubject.scope, subjectVersion: planSubject.version, subjectHash: planSubject.hash})) throw new StrategyError("Queue requires a current plan approval");
   if (strategy.project_id !== plan.project_id || strategy.source_plan.plan_id !== plan.plan_id || strategy.source_plan.version !== plan.version || strategy.source_plan.subject_hash !== planSubject.hash) throw new StrategyError("Strategy is stale for the current plan");
   const packages = new Map((distributionPlan?.packages ?? []).map((item) => [item.piece_id, item]));
   const publications = new Map(dashboard.pieces.map((piece) => [piece.piece_id, piece]));

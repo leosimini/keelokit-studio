@@ -31,6 +31,8 @@ export function createPilotReview({state, planSubjectKey = "plan", candidates, e
   if (!Array.isArray(editorialReviews)) throw new PilotError("Current editorial reviews are required before style review");
   const reports = new Map(editorialReviews.map((report) => [report.piece_id, report]));
   for (const candidate of candidates) {
+    if (typeof candidate.author !== "string" || !candidate.author) throw new PilotError("Every candidate requires the author id so reviewers can be kept independent");
+    if (reports.get(candidate.piece_id)?.reviewer === candidate.author) throw new PilotError(`Editorial reviewer cannot be the author of ${candidate.piece_id}`);
     try { assertEditorialReviewCurrent(reports.get(candidate.piece_id), candidate); } catch (error) { throw new PilotError(error.message); }
   }
   const pieces = selectPilotSet({state, planSubjectKey, candidates});
@@ -38,16 +40,17 @@ export function createPilotReview({state, planSubjectKey = "plan", candidates, e
   const coveredPieceIds = [...new Set(candidates.map(({piece_id}) => piece_id))].sort();
   const editorialReviewIds = coveredPieceIds.map((pieceId) => reports.get(pieceId).review_id);
   const review = {project_id: state.project_id, scope, version, plan: {scope: plan.scope, version: plan.version, hash: plan.hash}, covered_piece_ids: coveredPieceIds, editorial_review_ids: editorialReviewIds, pilots: pieces};
-  const subject = {kind: "style", project_id: state.project_id, scope, version, hash: contentHash(review), piece_ids: coveredPieceIds};
+  const subject = {kind: "style", project_id: state.project_id, scope, version, hash: contentHash(review), piece_ids: coveredPieceIds, editorial_review_ids: editorialReviewIds};
   return {review: {...review, review_id: stableId("pilot-review", review)}, subject};
 }
 
 export function persistPilotSubject(state, subjectKey, subject, now = new Date().toISOString()) {
   if (subject.kind !== "style" || subject.project_id !== state.project_id) throw new PilotError("Style subject must belong to the engagement project");
+  if (!Array.isArray(subject.editorial_review_ids) || subject.editorial_review_ids.length === 0 || subject.editorial_review_ids.length !== subject.piece_ids.length) throw new PilotError("Style subject must come from createPilotReview and name an editorial review for each covered piece");
   return setCurrentSubject(state, subjectKey, subject, now);
 }
 
-export function recordStyleOutcome(state, {subjectKey, expectedSubject, outcome, confirmedBy, explicitMethod, comments = [], recordedAt = new Date().toISOString()}) {
+export function recordStyleOutcome(state, {subjectKey, expectedSubject, outcome, confirmedBy, explicitMethod, comments = [], editorialReviews = [], recordedAt = new Date().toISOString()}) {
   assertValidState(state);
   const current = state.versions[subjectKey];
   if (!current || current.kind !== "style") throw new PilotError("A persisted style subject is required");
@@ -55,6 +58,15 @@ export function recordStyleOutcome(state, {subjectKey, expectedSubject, outcome,
   if (typeof confirmedBy !== "string" || !confirmedBy || !["conversation", "file", "dashboard", "api"].includes(explicitMethod)) throw new PilotError("Style review requires explicit reviewer and method");
   if (!Array.isArray(comments) || comments.some((value) => typeof value !== "string" || !value)) throw new PilotError("Style comments must be non-empty strings");
   if (!new Set(["approved", "changes_requested"]).has(outcome) || (outcome === "changes_requested" && comments.length === 0)) throw new PilotError("Style outcome must be approved or changes_requested with comments");
+  if (outcome === "approved") {
+    const reports = new Map(editorialReviews.map((report) => [report.review_id, report]));
+    for (const reviewId of current.editorial_review_ids ?? []) {
+      const report = reports.get(reviewId);
+      if (!report || report.verdict !== "pass") throw new PilotError(`Style approval requires the passing editorial report ${reviewId}`);
+      if (report.reviewer === confirmedBy) throw new PilotError("The editorial reviewer cannot also give the style approval");
+    }
+    if (!(current.editorial_review_ids?.length > 0)) throw new PilotError("Style subject carries no editorial review");
+  }
   const status = outcome === "approved" ? "approved" : "revoked";
   let next = addApproval(state, {approval_id: stableId("approval", {subjectKey, expectedSubject, outcome, confirmedBy, explicitMethod, recordedAt}), kind: "style", scope: current.scope, confirmed_by: confirmedBy, confirmed_at: recordedAt, subject_version: current.version, subject_hash: current.hash, explicit_method: explicitMethod, status}, recordedAt);
   next.events.push({event_id: randomUUID(), type: outcome === "approved" ? "style.approved" : "style.changes-requested", recorded_at: recordedAt, details: {subject_key: subjectKey, scope: current.scope, version: current.version, hash: current.hash, comments: [...comments]}});
