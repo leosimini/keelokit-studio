@@ -106,6 +106,37 @@ test("rejects assets without origin", async () => {
   });
 });
 
+test("rejects asset approval, path, and dependency graph bypasses", async () => {
+  await withMutation("assets.json", (assets) => {
+    assets.assets[0].approval = {status: "approved", review_id: null};
+  }, async (directory) => {
+    const result = await validateContracts(directory);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((error) => error.includes("requires a review_id")));
+  });
+
+  await withMutation("assets.json", (assets) => {
+    const duplicatePath = structuredClone(assets.assets[0]);
+    duplicatePath.asset_id = "capture-assign-copy";
+    duplicatePath.evidence_id = null;
+    duplicatePath.depends_on = [];
+    assets.assets.push(duplicatePath);
+  }, async (directory) => {
+    const result = await validateContracts(directory);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((error) => error.includes("paths must be unique")));
+  });
+
+  await withMutation("assets.json", (assets) => {
+    const asset = assets.assets[0];
+    asset.depends_on = [{type: "asset", id: asset.asset_id, sha256: asset.sha256}];
+  }, async (directory) => {
+    const result = await validateContracts(directory);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((error) => error.includes("cannot depend on itself")));
+  });
+});
+
 test("rejects brand references that are not present in source, asset, or audience contracts", async () => {
   await withMutation("brand.json", (brand) => {
     brand.source_ids = ["source-missing"];

@@ -1,6 +1,6 @@
 # C03-05 — Persist assets, hashes and dependencies
 
-Status: pending
+Status: verified
 
 - Requirements: ST-006, ST-009, ST-015
 - Evaluations: EV-009

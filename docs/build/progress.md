@@ -26,7 +26,7 @@ C03 — identity, evidence, and capture.
 | C03-02 | verified | selected evidence and claims are mechanically gated by journey, role, build/commit, locale, complete flag state, and availability |
 | C03-03 | verified | Playwright runs origin-allowlisted, role-asserted journeys and preserves content-addressed success/failure evidence without leaking step values |
 | C03-04 | verified | contributed files retain source, hash, nullable context, reported claims and explicit verification limits without becoming live claims |
-| C03-05 | pending | project-local assets, hashes, and dependency tracking |
+| C03-05 | verified | explicit project-local asset outputs, content hashes, approval state, dependency graphs, and selective invalidation pass independent review |
 
 ## Verification ledger
 
@@ -64,6 +64,8 @@ C03 — identity, evidence, and capture.
 - Independent C03-03 review reproduced secret leakage, pre-block redirects, identity overwrites, capability overclaims, browser leaks, role drift, recapture overwrites, async false failures, selector regressions, and portability gaps; all were regression-tested and the reviewer confirmed no remaining P1/P2 findings.
 - `node --test tests/provided-material.test.mjs`: pass; covers complete and absent provenance, content-bound identities, invalid verification metadata, traversal, non-files, and non-blocking FIFO rejection.
 - Independent C03-04 review reproduced parent-directory, descriptor, and logical-alias replacement races plus blocking FIFO and provenance-validation defects; all were fixed and the reviewer confirmed 107/107 tests with no remaining P1/P2 findings.
+- `node --test tests/assets.test.mjs tests/contracts.test.mjs`: pass, 16 tests; covers explicit project outputs, stable content identity, changed bytes, approval state, dependency order/hash/cycles, selective transitive invalidation, portable paths, files-only destinations, and cross-contract invariants.
+- Independent C03-05 review found output-directory and destination identity races, partial-write and special-file gaps, inconsistent contract validation, unsafe recorded paths, and hashless asset dependencies. All were fixed; a final high-reasoning review ran 22 focused tests and found no remaining P1/P2 defects.
 - Narrative/prompt research was assessed as non-authoritative design evidence. Mechanical evidence gates are queued for C03; selector/composer/reviewer work remains owned by C04 and is not described as model-validated.
 
 ## Blockers and limits
@@ -74,5 +76,5 @@ C03 — identity, evidence, and capture.
 
 ## Next
 
-Implement C03-05 project-local asset persistence, hashes, dependencies, and selective invalidation.
+Define C04 backlog from the authoritative production/review milestone, then implement C04-01 render adapter and brand components.
 

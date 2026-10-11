@@ -2,6 +2,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 import {readFile, readdir} from "node:fs/promises";
 import {dirname, join, resolve} from "node:path";
 import {fileURLToPath} from "node:url";
+import {createAssetInventory} from "../assets/inventory.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const schemaDir = join(root, "schemas/v1");
@@ -79,6 +80,12 @@ export async function validateContracts(inputDirectory) {
   const pieceIds = new Set(pieces.map(({piece_id}) => piece_id));
   const piecesById = new Map(pieces.map((piece) => [piece.piece_id, piece]));
 
+  try {
+    createAssetInventory({projectId, assets});
+  } catch (error) {
+    for (const message of error.errors ?? [error.message]) errors.push(message);
+  }
+
   for (const duplicate of duplicates(sourceIdList)) errors.push(`project-context.json: duplicate source_id ${duplicate}`);
   for (const duplicate of duplicates(audiences.map(({audience_id}) => audience_id))) errors.push(`audiences.json: duplicate audience_id ${duplicate}`);
   for (const duplicate of duplicates(evidenceIdList)) errors.push(`product-evidence.json: duplicate evidence_id ${duplicate}`);
@@ -99,6 +106,11 @@ export async function validateContracts(inputDirectory) {
   for (const duplicate of duplicates(brand.logos.map(({role}) => role))) errors.push(`brand.json: duplicate logo role ${duplicate}`);
   for (const asset of assets) {
     if (asset.evidence_id != null && !evidenceIds.has(asset.evidence_id)) errors.push(`assets.json: asset ${asset.asset_id} references unknown evidence ${asset.evidence_id}`);
+    for (const dependency of asset.depends_on) {
+      if (dependency.type === "evidence" && !evidenceIds.has(dependency.id)) errors.push(`assets.json: asset ${asset.asset_id} references unknown evidence dependency ${dependency.id}`);
+      if (dependency.type === "source" && !sourceIds.has(dependency.id)) errors.push(`assets.json: asset ${asset.asset_id} references unknown source dependency ${dependency.id}`);
+      if (dependency.type === "brand" && dependency.id !== brand.brand_id) errors.push(`assets.json: asset ${asset.asset_id} references unknown brand dependency ${dependency.id}`);
+    }
   }
   for (const suite of suites) {
     for (const dependency of suite.dependencies) if (!suiteIds.has(dependency)) errors.push(`content-plan.json: suite ${suite.suite_id} references unknown suite dependency ${dependency}`);

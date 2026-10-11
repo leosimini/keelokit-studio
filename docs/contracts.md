@@ -11,7 +11,7 @@ The first contract set covers the references needed to connect discovery, audien
 - `brief.schema.json` owns the versioned agency brief, including audience-specific tone and voice confirmation state.
 - `product-evidence.json` owns reproducible product evidence and allowed claims.
 - `provided-material.schema.json` validates optional contributed-material records without upgrading reported claims to verified product claims.
-- `assets.json` owns asset hashes and provenance. An asset without origin is invalid.
+- `assets.json` owns project-local asset hashes, provenance, explicit approval state, validity, and typed dependency links. An asset without origin is invalid.
 - `content-plan.json` owns suites and planned pieces, including their audience, intention, CTA, evidence, and dependencies.
 - `storyboards/*.json` derives audience, intention, and CTA from a planned piece and adds timed scenes.
 
