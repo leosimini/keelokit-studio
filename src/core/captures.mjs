@@ -3,10 +3,9 @@ import {mkdir, readFile, writeFile} from "node:fs/promises";
 import {dirname} from "node:path";
 import {resolveConsumerPath} from "./paths.mjs";
 
-// Stores capture bytes inside the project under a content-addressed name; identical bytes are reused, a collision is an error.
-export async function storeCaptureBytes({projectRoot, outputDirectory, captureId, suffix = "", content}) {
+// Stores bytes inside the project; identical bytes already at the path are reused, different bytes at the same path are an error.
+export async function storeProjectBytes({projectRoot, path, content}) {
   const sha256 = createHash("sha256").update(content).digest("hex");
-  const path = `${outputDirectory}/${captureId}${suffix}-${sha256}.png`;
   const absolutePath = await resolveConsumerPath(projectRoot, path);
   await mkdir(dirname(absolutePath), {recursive: true});
   try {
@@ -16,5 +15,12 @@ export async function storeCaptureBytes({projectRoot, outputDirectory, captureId
     const existingHash = createHash("sha256").update(await readFile(absolutePath)).digest("hex");
     if (existingHash !== sha256) throw new Error("Content-addressed capture collision");
   }
-  return {path, hash: `sha256:${sha256}`};
+  return {path, hash: `sha256:${sha256}`, sha256};
+}
+
+// Captures are named by their content, so a re-capture of identical pixels reuses the file.
+export async function storeCaptureBytes({projectRoot, outputDirectory, captureId, suffix = "", content}) {
+  const sha256 = createHash("sha256").update(content).digest("hex");
+  const {path, hash} = await storeProjectBytes({projectRoot, path: `${outputDirectory}/${captureId}${suffix}-${sha256}.png`, content});
+  return {path, hash};
 }
