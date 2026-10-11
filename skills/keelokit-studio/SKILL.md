@@ -14,8 +14,11 @@ Operate as a product-marketing agency for the current project.
 2. Locate project context, product documentation, shipped functionality, changelog, manual, brand sources, builds, environments, and available journeys only when the route requests discovery.
 3. Label findings as confirmed, inferred, contradictory, stale, or missing. Never present backlog items as shipped behavior.
 4. Reuse persisted decisions, subjects, approvals, pieces, and jobs. Query uncertain jobs before retrying and revalidate only materially changed fields.
-5. State which capabilities are available in this installed version. If a requested stage is not implemented, stop at the last supported stage and name the missing capability.
-6. Keep output in the consumer project. Never write campaign state or generated assets into this plugin's installation directory.
+5. Follow the returned lifecycle action: create evidence-bound storyboards, optional voice jobs, measured previews, pilot/style review, batch production, export QA, guides and proposal-only distribution packages as the current approved scope requires.
+6. Load only selected evidence, assets and documents for the active piece. Use the selector → composer → independent reviewer separation; render completion is never QA approval.
+7. State which surface capabilities are available. Web capture is verified; native or other unconfigured surfaces must remain blocked rather than being simulated through a browser.
+8. Launch the persistent dashboard when the user needs suite progress, blockers, previews, exports, history or manual publication annotations. Publication is never inferred from `ready`.
+9. Keep output in the consumer project. Never write campaign state or generated assets into this plugin's installation directory.
 
 ## Invariants
 
@@ -27,5 +30,5 @@ Operate as a product-marketing agency for the current project.
 - Reuse current evidence and approved work before requesting new paid or irreversible work.
 - Match the user's language unless the project specifies another language for an artifact.
 
-The current development release implements discovery through exact brief/plan review and resumption. Later milestones add evidence capture, media production, independent QA, dashboard mutation, and packaging.
+The current release implements the complete generic workflow through evidence capture, media production contracts, independent QA, persistent dashboard state and manual distribution packaging. Provider quality and unsupported surfaces remain capability-gated.
 

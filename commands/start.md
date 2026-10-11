@@ -13,5 +13,5 @@ Run the persisted start router from the consumer project before choosing an acti
 node "${CLAUDE_PLUGIN_ROOT}/scripts/studio-start.mjs" --project-root "$PWD" --project-id "<confirmed-project-id>"
 ```
 
-Follow the returned action. Use the implemented context/manual discovery, selective intake, audience, brief, plan, and review contracts. Ask for explicit approval of the exact rendered subject. Media production, dashboard mutation, and publication are not yet implemented; report those capability limits instead of simulating them.
+Follow the returned action. Use the implemented discovery, intake, audience, brief, plan, evidence, storyboard, pilot, production, QA, guide, distribution and dashboard contracts. Ask for explicit approval of the exact brief, plan and style subject at their gates. Keep production, verification and publication annotations separate. Never simulate an unavailable surface or automatic publication.
 

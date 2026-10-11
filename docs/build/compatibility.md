@@ -9,6 +9,8 @@ Verified on 2026-10-11.
 | Keelokit | 0.9.1, commit `ae9966c4994438332a3ff5c1497ce499ae117c9b` | repository instructions, marketplace, packaging, and tests | compatible independent repository |
 | Node.js | 24.19.0 exercised; 22.16+ required | local verification, Keelokit baseline, and stable `node:sqlite` interface | verification and state runtime |
 | Remotion | 4.0.534 | npm metadata, installed type definitions, `bundle`, `selectComposition`, and real `renderStill` with system Chromium | integrated for C04 PNG previews |
+| Dashboard | Node.js HTTP on `127.0.0.1` | persisted revision tests, path/XSS review, registered artifact serving and publication round trips | verified for local consumer projects |
+| Native capture | none available | no app build, `adb`, Maestro, Xcode/simctl, device or simulator in the build environment | blocked and not claimed |
 
 ## Current limits
 

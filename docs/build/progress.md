@@ -28,11 +28,21 @@ C04 — production and review.
 | C03-04 | verified | contributed files retain source, hash, nullable context, reported claims and explicit verification limits without becoming live claims |
 | C03-05 | verified | explicit project-local asset outputs, content hashes, approval state, dependency graphs, and selective invalidation pass independent review |
 | C04-01 | verified | Remotion 4.0.534 produces an in-memory PNG from hash-bound assets and exact storyboard, brand, evidence, and configuration inputs without claiming QA |
-| C04-02 | pending | intent-bound explainer and tutorial storyboards |
-| C04-03 | pending | optional voice adapter and deterministic test double |
-| C04-04 | pending | measured audio, captions, and layout checks |
-| C04-05 | pending | reviewable preview, pilot, and style approval gate |
-| C04-06 | pending | configured exports and independent QA report |
+| C04-02 | verified | approved intent-bound explainer/tutorial storyboards preserve evidence claims, preconditions and ordered steps |
+| C04-03 | verified | optional voice contract, budget gate, exact cache identity and uncertain-job query path pass deterministic tests |
+| C04-04 | verified | real WAVE measurement, caption alignment and configurable sampled layout checks report explicit limits |
+| C04-05 | verified | minimal distinct-style pilot selection and exact version/hash approval block unauthorized batch work |
+| C04-06 | verified | byte-bound exports, decodability checks and independent QA cannot pass without complete recorded inspection |
+| C05-01 | verified | public variants remain distinct from internal IDs and bind to exact QA-approved exports |
+| C05-02 | verified | channel organization is proposal-only and capability-gated; no remote publication occurs |
+| C05-03 | verified | paid jobs reserve budget, preserve handles/cost uncertainty and block duplicate active submissions |
+| C05-04 | verified | UI, role, journey, build, manual, brand, voice and title changes invalidate only affected derivatives |
+| C05-05 | verified | guides derive from validated storyboard evidence and reference existing manuals without overwriting them |
+| C06-01 | verified | two unrelated synthetic products validate with different audience maps and no core leakage |
+| C06-02 | verified | jobs, selective refresh, dashboard history and publication annotations resume across sessions |
+| C06-03 | blocked | real case requires native capture; no app build, device/simulator or native automation tool is available |
+| C06-04 | blocked | real validation cannot run before C06-03 and case-specific context/roles are supplied |
+| C06-05 | verified | 166 tests, portability, strict plugin validation, isolated install and real plugin inventory load pass |
 
 ## Verification ledger
 
@@ -74,15 +84,20 @@ C04 — production and review.
 - Independent C03-05 review found output-directory and destination identity races, partial-write and special-file gaps, inconsistent contract validation, unsafe recorded paths, and hashless asset dependencies. All were fixed; a final high-reasoning review ran 22 focused tests and found no remaining P1/P2 defects.
 - `node --test tests/render.test.mjs`: pass, including a real Remotion/Chromium PNG preview, exact manifest identity, input/reference failures, and explicit blocked capability without browser download.
 - Independent C04-01 review reproduced evidence/provenance gaps, partial identity, unsafe MIME/theme input, unloaded fonts, ambiguous timeline/maps, capability overclaim, and inherited-property bypasses. All were fixed; the reviewer confirmed 6/6 render tests with no remaining P1/P2 defects.
-- Narrative/prompt research was assessed as non-authoritative design evidence. Mechanical evidence gates are queued for C03; selector/composer/reviewer work remains owned by C04 and is not described as model-validated.
+- Narrative/prompt research was assessed as non-authoritative design evidence. Mechanical evidence gates and selector/composer/independent-review separation are implemented without describing prompt or model quality as validated.
+- `node --test tests/*.test.mjs`: pass, 166 tests. C04 covers approved storyboards, optional voice, actual audio measurement, pilot/style gating, export integrity and independent QA. Two high-reasoning reviews reproduced ten material bypasses; all were regression-tested and confirmed closed.
+- C05 distribution, budget/job recovery, selective refresh, evidence-derived guides and the persistent dashboard pass focused and full tests. High-reasoning review reproduced package/QA identity, paid-job reservation, guide omission, dashboard XSS/path and publication-integrity defects; all were fixed and confirmed closed.
+- `npm run verify:portability`: pass for field-service and learning-platform fixtures with different audience counts; source/schema/command/skill scan contains no fixture/example leakage.
+- `npm run verify`: pass for all tests, portability, Claude Code strict validation, isolated marketplace installation and real plugin inventory load.
 
 ## Blockers and limits
 
 - The build environment has no Claude authentication. Static validation, isolated installation, and plugin loading are testable; model-driven command execution is blocked.
 - GitHub review publication is blocked because the configured `GH_TOKEN` is invalid; local branch and coherent commits remain available.
 - Keelokit marketplace integration is intentionally deferred until Studio is installable from its remote repository and EV-001 passes.
+- C06 native real-case validation is blocked: the required app checkout/build, demo roles/data, device/simulator and native automation executable are absent. No web substitute or product-specific fixture was introduced.
 
 ## Next
 
-Implement C04-02 intent-bound explainer and tutorial storyboards.
+Publish the review branch/PR when GitHub authentication becomes valid, then provide the native real-case inputs to resume C06-03/C06-04. No merge, release, tag or external publication has been performed.
 

@@ -60,15 +60,19 @@ export function resumeEngagement({state, intakeFields, activeScopeIds = [], chan
       if (!subject) return {phase: "awaiting_plan_approval", action: "draft_plan", reason: "No current plan subject is persisted"};
       const approved = hasCurrentApproval(state, {kind: "plan", scope: subject.scope, subjectVersion: subject.version, subjectHash: subject.hash});
       return approved
-        ? {phase: "awaiting_plan_approval", action: "prepare_pilot", subject: structuredClone(subject), reason: "Current plan is approved; media work remains a later capability"}
+        ? {phase: "awaiting_plan_approval", action: "prepare_pilot", subject: structuredClone(subject), reason: "Current plan is approved; select the minimal distinct-style pilot set"}
         : {phase: "awaiting_plan_approval", action: "review_plan", subject: structuredClone(subject), reason: "Current plan still needs explicit approval"};
     }
     case "pilot_in_progress":
+      return {phase: state.engagement_phase, action: "produce_pilot", reason: "Resume only the approved pilot scope"};
     case "awaiting_style_approval":
+      return {phase: state.engagement_phase, action: "review_pilot", reason: "Record an explicit decision for the exact pilot style subject"};
     case "producing":
+      return {phase: state.engagement_phase, action: "produce_pieces", reason: "Resume approved pieces and reuse valid evidence, voice and renders"};
     case "reviewing":
+      return {phase: state.engagement_phase, action: "verify_exports", reason: "Run mechanical checks and independent media review"};
     case "ready":
-      return {phase: state.engagement_phase, action: "resume_current_phase", reason: "Preserve completed work and continue from persisted piece state"};
+      return {phase: state.engagement_phase, action: "prepare_distribution", reason: "Prepare proposal-only channel packages without publishing"};
     default:
       throw new TypeError(`Unsupported engagement phase: ${state.engagement_phase}`);
   }
