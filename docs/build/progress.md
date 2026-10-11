@@ -4,7 +4,7 @@ Updated: 2026-10-11.
 
 ## Active milestone
 
-C03 — identity, evidence, and capture.
+C04 — production and review.
 
 | Story | Status | Evidence |
 | --- | --- | --- |
@@ -27,6 +27,12 @@ C03 — identity, evidence, and capture.
 | C03-03 | verified | Playwright runs origin-allowlisted, role-asserted journeys and preserves content-addressed success/failure evidence without leaking step values |
 | C03-04 | verified | contributed files retain source, hash, nullable context, reported claims and explicit verification limits without becoming live claims |
 | C03-05 | verified | explicit project-local asset outputs, content hashes, approval state, dependency graphs, and selective invalidation pass independent review |
+| C04-01 | pending | render adapter and parameterized brand components |
+| C04-02 | pending | intent-bound explainer and tutorial storyboards |
+| C04-03 | pending | optional voice adapter and deterministic test double |
+| C04-04 | pending | measured audio, captions, and layout checks |
+| C04-05 | pending | reviewable preview, pilot, and style approval gate |
+| C04-06 | pending | configured exports and independent QA report |
 
 ## Verification ledger
 
@@ -76,5 +82,5 @@ C03 — identity, evidence, and capture.
 
 ## Next
 
-Define C04 backlog from the authoritative production/review milestone, then implement C04-01 render adapter and brand components.
+Implement C04-01 render adapter and brand components.
 
