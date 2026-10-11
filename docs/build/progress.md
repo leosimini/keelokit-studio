@@ -42,14 +42,14 @@ C04 — production and review.
 | C06-02 | verified | jobs, selective refresh, dashboard history and publication annotations resume across sessions |
 | C06-03 | blocked | real case requires native capture; no app build, device/simulator or native automation tool is available |
 | C06-04 | blocked | real validation cannot run before C06-03 and case-specific context/roles are supplied |
-| C06-05 | verified | 166 tests, portability, strict plugin validation, isolated install and real plugin inventory load pass |
+| C06-05 | verified | 195 tests, portability, strict plugin validation, isolated install and real plugin inventory load pass |
 
 ## Verification ledger
 
-- `npm run test`: pass, 2 foundation tests.
+- `npm run test`: pass, 195 tests.
 - `npm run validate:plugin`: pass for plugin manifest, marketplace manifest, commands, and skills under Claude Code 2.1.296 strict mode; no warnings.
 - `npm run test:install`: pass; isolated local marketplace added and `keelokit-studio@keelokit-studio` 0.1.0 installed and enabled outside the plugin repository.
-- `npm run test:load`: pass; Claude Code init inventory contains `keelokit-studio:start` and `keelokit-studio:keelokit-studio`. Authenticated inference remains unavailable.
+- `npm run test:load`: pass; Claude Code init inventory contains the start command, orchestration skill and five specialist agents. Authenticated inference remains unavailable.
 - `npm run validate:contracts -- fixtures/contracts/field-service`: pass.
 - `npm run validate:contracts -- fixtures/contracts/learning-platform`: pass with three audiences, compared with one in the other fixture.
 - `npm test`: pass, including EV-002 negative cases for required piece fields, provenance, dependencies, contradictory metadata, duplicate IDs, and missing references.
@@ -93,6 +93,8 @@ C04 — production and review.
 - The live dry run exposed an intake documentation gap. The start command and orchestration skill now require scope-relevant provider/configuration, limits, capability checks, and safe credential references while explicitly prohibiting raw secrets in prompts or persisted outputs.
 - The same dry run exposed an editorial handoff gap: narration existed only inside `storyboard.json`. Storyboards now render a validated, human-readable Markdown production script with complete narration, timings, on-screen text, visual sources and evidence references; unsupported post-validation edits are rejected.
 - Adversarial review of that script found repeated promise/walkthrough copy, absent product assets, an evidence-to-promise gap, weak objection handling, a non-executable CTA and unverified channel fit. Studio now ships a read-only `editorial-critic` subagent plus a hash-bound editorial report contract; style review mechanically rejects missing, stale, forged, low-scoring, blocked or changes-requested reports. Critic pass remains distinct from owner style approval and performance measurement.
+- Agency-depth remediation adds cited recipes and deterministic portfolio ranking, attributed performance observations, competing-hook creative treatments, exact per-scene asset requirements, versioned specialist handoffs, treatment-bound narrative copy, a small validated motion vocabulary, real MP4 rendering and an idempotent dashboard queue projection. Timed video now requires fulfilled asset requirements and current creative/motion/asset handoffs; editorial review expires when strategy, treatment, motion or channel inputs change.
+- Final high-reasoning integration review reproduced a one-frame Remotion crash, canonical evidence-hash mismatch, stale dashboard queue acceptance and detached specialist handoffs. Each defect is regression-tested and closed; the complete suite passes 195/195.
 
 ## Blockers and limits
 

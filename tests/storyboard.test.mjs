@@ -5,6 +5,9 @@ import {createStoryboard, renderStoryboardScriptMarkdown, validateStoryboard, St
 import {createInitialState} from "../src/state/store.mjs";
 import {reviewSubject, setReviewSubject, recordReviewOutcome} from "../src/agency/review.mjs";
 import {createGuide, renderGuideMarkdown} from "../src/agency/guide.mjs";
+import {contentHash} from "../src/core/ids.mjs";
+import {selectRecipes} from "../src/agency/recipes.mjs";
+import {createCreativeTreatment} from "../src/agency/creative-treatment.mjs";
 
 const load = async (name) => JSON.parse(await readFile(new URL(`../fixtures/contracts/field-service/${name}.json`, import.meta.url), "utf8"));
 const templates = Object.fromEntries(await Promise.all(["audiences", "content-plan", "brand", "assets", "product-evidence"].map(async (name) => [name, await load(name)])));
@@ -28,7 +31,18 @@ function setup(intentType = "explainer", options = {}) {
     const text = section === "preconditions" ? piece.requirements[0] : section === "cta" ? piece.cta : step ?? piece.message;
     return {scene_id: `scene-${index + 1}`, section, step, start_seconds: index * piece.duration_seconds / sections.length, end_seconds: (index + 1) * piece.duration_seconds / sections.length, narration: text, on_screen_text: "", evidence_ids: [record.evidence_id], asset_ids: [assets.assets[0].asset_id], claims: ["promise", "walkthrough"].includes(section) ? [{claim: text, evidence_id: record.evidence_id}] : []};
   });
-  const context = {plan, audiences, state, evidence, assets, brand};
+  let treatment = null, strategy = null;
+  if (options.treatment) {
+    const planSubject = state.versions.plan;
+    const recipes = selectRecipes({recipeIds: ["task-alternative-value-proof"], objective: plan.suites[0].objective}).map(({recipe_id, version, hash}) => ({recipe_id, version, hash}));
+    const candidate = {candidate_id: "candidate-storyboard", piece_id: piece.piece_id, channel: piece.channels[0], recipes};
+    const strategyBody = {schema_version: 1, strategy_id: "strategy-storyboard", project_id: plan.project_id, version: 1, source_plan: {plan_id: plan.plan_id, version: plan.version, subject_hash: planSubject.hash, scope: planSubject.scope}, candidates: [candidate]};
+    strategy = {...strategyBody, content_hash: contentHash(strategyBody)};
+    const hook = "Need to assign urgent work without losing context?";
+    treatment = createCreativeTreatment({projectId: plan.project_id, version: 1, plan, audiences, planSubject, strategy, candidateId: candidate.candidate_id, evidence, treatment: {audience_tension: "Urgent assignment without context loss", hooks: [{key: "task", text: hook, selected: true, rationale: "Names the task and tension"}, {key: "generic", text: "Work better", selected: false, rationale: "Too generic"}], mechanism: "Show the verified assignment path", proof: record.result, payoff: "Ownership becomes visible", cta: piece.cta, visual_approach: {concept: "Action and result", asset_intent: "Verified capture", motion_intent: "Restrained focus"}, channel_format: {channel: piece.channels[0], formats: [piece.formats[0]], reasoning: "Matches the planned help placement"}, recipe_bindings: recipes, risks: [], claims: [{claim: record.allowed_claims[0], evidence_ids: [record.evidence_id], limitation: "Only the verified context"}], accessibility_intent: {captions: "All narration", contrast: "Verify", readability: "Readable holds", reduced_motion: "Cuts"}, unresolved_gaps: []}});
+    scenes[0].on_screen_text = hook;
+  }
+  const context = {plan, audiences, state, evidence, assets, brand, treatment, strategy};
   const input = {...context, pieceId: piece.piece_id, version: 1, intentType, fps: 30, scenes, structureJustification: options.exception ?? null, evidenceTarget: Object.fromEntries(["feature_or_journey", "surface", "role", "build", "locale", "flags", "availability"].map((key) => [key, record[key]]))};
   return {context, input};
 }
@@ -59,6 +73,15 @@ test("renders a readable evidence-bound production script", () => {
   const changed = structuredClone(storyboard);
   changed.scenes[0].narration = "Unsupported promise";
   assert.throws(() => renderStoryboardScriptMarkdown(changed, context), /unsupported text or claim/);
+});
+
+test("allows only the selected current treatment hook as narrative copy", () => {
+  const {context, input} = setup("explainer", {treatment: true});
+  const storyboard = createStoryboard(input);
+  assert.deepEqual(storyboard.narrative_copy, [context.treatment.intent.hooks[0].text]);
+  assert.equal(validateStoryboard(storyboard, context), storyboard);
+  const changed = structuredClone(storyboard); changed.narrative_copy = ["Unreviewed hook"]; changed.scenes[0].on_screen_text = "Unreviewed hook";
+  assert.throws(() => validateStoryboard(changed, context), /Narrative copy/);
 });
 
 test("accepts approved alternatives without a fixed duration or format", () => {

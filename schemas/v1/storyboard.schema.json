@@ -21,6 +21,8 @@
     "preconditions": {"$ref": "#/$defs/strings"},
     "steps": {"type": "array", "items": {"type": "string", "minLength": 1}},
     "structure_justification": {"type": ["string", "null"], "minLength": 1},
+    "treatment_hash": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+    "narrative_copy": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
     "evidence_target": {
       "type": "object", "additionalProperties": false,
       "required": ["feature_or_journey", "surface", "role", "build", "locale", "flags", "availability"],

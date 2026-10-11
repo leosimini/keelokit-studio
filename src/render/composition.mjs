@@ -31,7 +31,7 @@ function Scene({scene, theme, assetSources, logoSrc}) {
   const motion = scene.motion;
   const enter = motion.entrance_frames === 0 ? 1 : interpolate(frame, [0, motion.entrance_frames], [0, 1], {extrapolateLeft: "clamp", extrapolateRight: "clamp"});
   const exitStart = scene.duration_frames - motion.exit_frames;
-  const leave = motion.exit_frames === 0 ? 1 : interpolate(frame, [exitStart, scene.duration_frames - 1], [1, 0], {extrapolateLeft: "clamp", extrapolateRight: "clamp"});
+  const leave = motion.exit_frames === 0 ? 1 : motion.exit_frames === 1 ? (frame >= scene.duration_frames - 1 ? 0 : 1) : interpolate(frame, [exitStart, scene.duration_frames - 1], [1, 0], {extrapolateLeft: "clamp", extrapolateRight: "clamp"});
   const opacity = (motion.entrance === "fade" ? enter : 1) * (motion.exit === "fade" ? leave : 1);
   const transform = motion.entrance === "slide-up" ? `translateY(${(1 - enter) * 36}px)` : motion.entrance === "scale" ? `scale(${0.94 + enter * 0.06})` : motion.emphasis === "pulse" ? `scale(${1 + Math.sin(frame / 4) * 0.01})` : "none";
   return h(AbsoluteFill, {style: {opacity, transform}}, content, scene.highlight ? h(CursorHighlight, {...scene.highlight, theme}) : null, scene.step_label ? h(StepLabel, {text: scene.step_label, theme}) : null, scene.subtitle ? h(SubtitleTrack, {text: scene.subtitle, theme}) : null);

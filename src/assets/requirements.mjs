@@ -123,7 +123,7 @@ export function validateAssetRequirements(document, {storyboard, assets, evidenc
         if (dependency.type === "asset") checkAvailability(byId.get(dependency.id));
         if (dependency.type === "evidence") {
           if (dependency.id !== requirement.evidence_id) fail("Fulfillment evidence dependency mismatch");
-          if (dependency.sha256 !== null && !evidence?.evidence.find(({evidence_id}) => evidence_id === dependency.id)?.hashes.includes(dependency.sha256)) fail("Fulfillment evidence dependency hash mismatch");
+          if (dependency.sha256 !== null && !evidence?.evidence.find(({evidence_id}) => evidence_id === dependency.id)?.hashes.includes(`sha256:${dependency.sha256}`)) fail("Fulfillment evidence dependency hash mismatch");
         }
       }
     }

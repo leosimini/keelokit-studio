@@ -35,13 +35,14 @@ try {
   assert.ok(init.plugins.some(({name, version}) => name === "keelokit-studio" && version === "0.1.0"));
   assert.ok(init.slash_commands.includes("keelokit-studio:start"));
   assert.ok(init.skills.includes("keelokit-studio:keelokit-studio"));
+  for (const agent of ["content-strategist", "creative-director", "motion-director", "asset-producer", "editorial-critic"]) assert.ok(init.agents.includes(`keelokit-studio:${agent}`), `Claude Code did not discover ${agent}`);
 
   const final = events.findLast((event) => event.type === "result");
   if (result.status !== 0) {
     assert.equal(final?.result, "Not logged in · Please run /login");
   }
 
-  console.log("Claude Code loaded keelokit-studio 0.1.0 with its start command and orchestration skill.");
+  console.log("Claude Code loaded keelokit-studio 0.1.0 with its start command, orchestration skill, and five specialist agents.");
   if (result.status !== 0) {
     console.log("Model execution was skipped because this environment has no Claude login.");
   }

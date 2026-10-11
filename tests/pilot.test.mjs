@@ -7,9 +7,10 @@ import {createEditorialReview, editorialDimensions} from "../src/agency/editoria
 
 const planHash = `sha256:${"a".repeat(64)}`;
 const approval = {approval_id: "approval-plan", kind: "plan", scope: "plan-main", confirmed_by: "owner", confirmed_at: "2026-10-11T12:00:00.000Z", subject_version: 1, subject_hash: planHash, explicit_method: "conversation", status: "approved"};
-const candidate = (piece_id, style_signature, fill) => ({piece_id, style_signature, storyboard_id: `storyboard-${piece_id}`, storyboard_version: 1, storyboard_hash: `sha256:${"e".repeat(64)}`, preview_artifact_id: `preview-${piece_id}`, preview_hash: `sha256:${fill.repeat(64)}`});
 const scores = Object.fromEntries(editorialDimensions.map((dimension) => [dimension, 4]));
-const editorial = (item) => createEditorialReview({projectId: "project-one", pieceId: item.piece_id, storyboardId: item.storyboard_id, storyboardVersion: item.storyboard_version, storyboardHash: item.storyboard_hash, previewArtifactId: item.preview_artifact_id, previewHash: item.preview_hash, reviewer: "independent-editor", reviewedAt: "2026-10-11T12:05:00.000Z", scores, attempts: ["Tried to disprove progression"], limits: ["No performance data"]});
+const reviewedInputs = Object.fromEntries(["channel", "motion", "strategy", "treatment"].map((key, index) => [key, `sha256:${String(index + 1).repeat(64)}`]));
+const candidate = (piece_id, style_signature, fill) => ({piece_id, style_signature, storyboard_id: `storyboard-${piece_id}`, storyboard_version: 1, storyboard_hash: `sha256:${"e".repeat(64)}`, preview_artifact_id: `preview-${piece_id}`, preview_hash: `sha256:${fill.repeat(64)}`, reviewed_inputs: reviewedInputs});
+const editorial = (item) => createEditorialReview({projectId: "project-one", pieceId: item.piece_id, storyboardId: item.storyboard_id, storyboardVersion: item.storyboard_version, storyboardHash: item.storyboard_hash, previewArtifactId: item.preview_artifact_id, previewHash: item.preview_hash, reviewedInputs: item.reviewed_inputs, reviewer: "independent-editor", reviewedAt: "2026-10-11T12:05:00.000Z", scores, attempts: ["Tried to disprove progression"], limits: ["No performance data"]});
 const review = (state, candidates, options = {}) => createPilotReview({state, candidates, editorialReviews: candidates.map(editorial), ...options});
 
 function planned(approved = true) {
@@ -68,7 +69,7 @@ test("blocks style review without a current passing editorial report", () => {
   const state = planned();
   const item = candidate("piece-a", "one", "b");
   assert.throws(() => createPilotReview({state, candidates: [item], editorialReviews: [], scope: "style-main", version: 1}), /editorial report/);
-  const failed = createEditorialReview({projectId: "project-one", pieceId: item.piece_id, storyboardId: item.storyboard_id, storyboardVersion: 1, storyboardHash: item.storyboard_hash, previewArtifactId: item.preview_artifact_id, previewHash: item.preview_hash, reviewer: "critic", reviewedAt: "2026-10-11T12:05:00.000Z", scores: {...scores, progression: 1}, findings: [{severity: "blocking", dimension: "progression", location: "scene 2", problem: "Repeats scene 1", consequence: "No narrative advance", revision: "Show the evidenced mechanism"}]});
+  const failed = createEditorialReview({projectId: "project-one", pieceId: item.piece_id, storyboardId: item.storyboard_id, storyboardVersion: 1, storyboardHash: item.storyboard_hash, previewArtifactId: item.preview_artifact_id, previewHash: item.preview_hash, reviewedInputs: item.reviewed_inputs, reviewer: "critic", reviewedAt: "2026-10-11T12:05:00.000Z", scores: {...scores, progression: 1}, findings: [{severity: "blocking", dimension: "progression", location: "scene 2", problem: "Repeats scene 1", consequence: "No narrative advance", revision: "Show the evidenced mechanism"}]});
   assert.throws(() => createPilotReview({state, candidates: [item], editorialReviews: [failed], scope: "style-main", version: 1}), /changes_requested/);
   const stale = editorial({...item, preview_hash: `sha256:${"f".repeat(64)}`});
   assert.throws(() => createPilotReview({state, candidates: [item], editorialReviews: [stale], scope: "style-main", version: 1}), /stale/);

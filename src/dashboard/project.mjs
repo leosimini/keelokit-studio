@@ -10,9 +10,14 @@ function eventFrom(update, event) {
 
 export function projectDashboard({dashboard, plan, queue = null, pieceUpdates = [], now = new Date().toISOString()}) {
   if (!dashboard || dashboard.project_id !== plan?.project_id || queue && queue.project_id !== plan.project_id) throw new DashboardProjectionError("Dashboard, plan and queue must share a project");
+  if (queue && (queue.source_plan?.plan_id !== plan.plan_id || queue.source_plan?.version !== plan.version || queue.dashboard_revision !== dashboard.revision)) throw new DashboardProjectionError("Publication queue is stale for the current plan or dashboard revision");
   if (typeof now !== "string" || Number.isNaN(Date.parse(now)) || new Date(now).toISOString() !== now) throw new DashboardProjectionError("now must be an exact ISO instant");
   const plannedPieces = plan.suites.flatMap((suite) => suite.pieces.map((piece) => ({piece, suite})));
   const plannedIds = new Set(plannedPieces.map(({piece}) => piece.piece_id));
+  for (const item of queue?.items ?? []) {
+    const planned = plannedPieces.find(({piece}) => piece.piece_id === item.piece_id)?.piece;
+    if (!planned || !planned.channels.includes(item.channel)) throw new DashboardProjectionError(`Queue candidate ${item.candidate_id} references an unknown planned piece or channel`);
+  }
   const updates = new Map();
   for (const update of pieceUpdates) {
     if (!plannedIds.has(update.piece_id) || updates.has(update.piece_id)) throw new DashboardProjectionError(`Unknown or duplicate piece update ${update.piece_id}`);

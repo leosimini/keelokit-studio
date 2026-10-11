@@ -9,6 +9,7 @@ import {promisify} from "node:util";
 import {createAssetInventory} from "../assets/inventory.mjs";
 import {stableId} from "../core/ids.mjs";
 import {assertMotionSpecCurrent} from "../agency/motion.mjs";
+import {assertProductionHandoffs} from "../agency/production-flow.mjs";
 
 const [brandSchema, storyboardSchema, evidenceSchema] = await Promise.all([
   readFile(resolve(import.meta.dirname, "../../schemas/v1/brand.schema.json"), "utf8").then(JSON.parse),
@@ -202,6 +203,8 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
 
 export async function renderRemotionVideo(options) {
   if (!options.motionSpec) throw new RenderAdapterError("Timed video export requires an exact motion specification", "motion_required");
+  if (!options.productionFlow) throw new RenderAdapterError("Timed video export requires current specialist handoffs and fulfilled asset requirements", "production_handoff_required");
+  assertProductionHandoffs({...options.productionFlow, storyboard: options.storyboard, motionSpec: options.motionSpec, assets: options.assets, evidence: options.evidence, projectId: options.storyboard.project_id});
   const capability = await remotionRenderCapability({browserExecutable: options.browserExecutable});
   if (capability.status !== "available") throw new RenderAdapterError(capability.reason, "render_capability_unavailable");
   const prepared = prepareRemotionRender(options);

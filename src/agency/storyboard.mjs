@@ -6,6 +6,7 @@ import {assertValidState, hasCurrentApproval} from "../state/store.mjs";
 import {createAssetInventory} from "../assets/inventory.mjs";
 import {evaluateEvidenceRequest} from "./evidence.mjs";
 import {reviewSubject} from "./review.mjs";
+import {assertCurrentCreativeTreatment} from "./creative-treatment.mjs";
 
 const schema = JSON.parse(await readFile(resolve(import.meta.dirname, "../../schemas/v1/storyboard.schema.json"), "utf8"));
 const validate = new Ajv2020({allErrors: true, strict: true}).compile(schema);
@@ -40,8 +41,16 @@ export function validateStoryboard(storyboard, context) {
   const {piece, subject} = approvedPiece({...context, pieceId: storyboard.piece_id});
   const {plan, evidence, assets, brand} = context;
   const errors = [];
-  if (!validateBrand(brand)) errors.push(...(validateBrand.errors ?? []).map((error) => `brand.json${error.instancePath || "/"}: ${error.message}`));
   const same = (actual, expected) => JSON.stringify(actual) === JSON.stringify(expected);
+  const narrativeCopy = storyboard.narrative_copy ?? [];
+  if (storyboard.treatment_hash !== undefined && storyboard.treatment_hash !== null) {
+    try {
+      assertCurrentCreativeTreatment({treatment: context.treatment, plan, audiences: context.audiences, planSubject: subject, strategy: context.strategy, evidence});
+      const allowed = context.treatment.intent.hooks.filter(({selected}) => selected).map(({text}) => text);
+      if (storyboard.treatment_hash !== context.treatment.content_hash || !same(narrativeCopy, allowed)) errors.push("Narrative copy must match the selected current treatment hook");
+    } catch (error) { errors.push(`Creative treatment: ${error.message}`); }
+  } else if (narrativeCopy.length) errors.push("Narrative copy requires a current bound creative treatment");
+  if (!validateBrand(brand)) errors.push(...(validateBrand.errors ?? []).map((error) => `brand.json${error.instancePath || "/"}: ${error.message}`));
   for (const [key, expected] of Object.entries({project_id: plan.project_id, plan_id: plan.plan_id, plan_version: subject.version, plan_hash: subject.hash, plan_scope: subject.scope, audience_id: piece.audience_id, intention: piece.intention, message: piece.message, cta: piece.cta, language: piece.language, structure: piece.structure, evidence_ids: piece.evidence_ids})) {
     if (!same(storyboard[key], expected)) errors.push(`${key} must match approved piece or plan`);
   }
@@ -85,7 +94,7 @@ export function validateStoryboard(storyboard, context) {
     if (scene.section !== "step" && scene.step !== null) errors.push(`Scene ${scene.scene_id} only step sections may declare a step`);
     for (const id of scene.evidence_ids) if (!selected.has(id)) errors.push(`Scene ${scene.scene_id} references unknown or unselected evidence ${id}`);
     for (const claim of scene.claims) if (!scene.evidence_ids.includes(claim.evidence_id)) errors.push(`Scene ${scene.scene_id} claim evidence must be selected in the scene`);
-    const allowedText = new Set([...scene.claims.map(({claim}) => claim), ...storyboard.preconditions, ...(scene.step === null ? [] : [scene.step]), storyboard.cta]);
+    const allowedText = new Set([...scene.claims.map(({claim}) => claim), ...storyboard.preconditions, ...(scene.step === null ? [] : [scene.step]), storyboard.cta, ...narrativeCopy]);
     for (const text of [scene.narration, scene.on_screen_text]) if (text && !allowedText.has(text)) errors.push(`Scene ${scene.scene_id} contains unsupported text or claim: ${text}`);
     if (!scene.narration && !scene.on_screen_text) errors.push(`Scene ${scene.scene_id} needs narration or on-screen text`);
     if (scene.section === "step" && ![scene.narration, scene.on_screen_text].includes(scene.step)) errors.push(`Scene ${scene.scene_id} must communicate its step`);
@@ -113,11 +122,12 @@ export function validateStoryboard(storyboard, context) {
   return storyboard;
 }
 
-export function createStoryboard({plan, audiences, state, evidence, assets, brand, pieceId, version, intentType, fps, durationSeconds, formats, evidenceTarget, scenes, structureJustification = null, subjectKey = "plan"}) {
-  const context = {plan, audiences, state, evidence, assets, brand, subjectKey};
+export function createStoryboard({plan, audiences, state, evidence, assets, brand, treatment = null, strategy = null, pieceId, version, intentType, fps, durationSeconds, formats, evidenceTarget, scenes, structureJustification = null, subjectKey = "plan"}) {
+  const context = {plan, audiences, state, evidence, assets, brand, treatment, strategy, subjectKey};
   const {piece, subject} = approvedPiece({...context, pieceId});
   const selected = piece.evidence_ids.map((id) => evidence.evidence.find(({evidence_id}) => evidence_id === id)).filter(Boolean);
-  const storyboard = structuredClone({schema_version: 1, storyboard_id: stableId("storyboard", {projectId: plan.project_id, pieceId}), version, project_id: plan.project_id, plan_id: plan.plan_id, plan_version: plan.version, plan_hash: subject.hash, plan_scope: subject.scope, piece_id: pieceId, audience_id: piece.audience_id, intention: piece.intention, intent_type: intentType, message: piece.message, cta: piece.cta, structure: piece.structure, duration_seconds: durationSeconds ?? piece.duration_seconds, formats: formats ?? piece.formats, language: piece.language, fps, evidence_ids: piece.evidence_ids, evidence_target: evidenceTarget, preconditions: intentType === "tutorial" ? piece.requirements.filter((requirement) => !requirement.startsWith("Storyboard exception: ")) : [], steps: intentType === "tutorial" ? selected.flatMap(({steps}) => steps) : [], structure_justification: structureJustification, scenes});
+  const narrativeCopy = treatment?.intent?.hooks?.filter(({selected}) => selected).map(({text}) => text) ?? [];
+  const storyboard = structuredClone({schema_version: 1, storyboard_id: stableId("storyboard", {projectId: plan.project_id, pieceId}), version, project_id: plan.project_id, plan_id: plan.plan_id, plan_version: plan.version, plan_hash: subject.hash, plan_scope: subject.scope, piece_id: pieceId, audience_id: piece.audience_id, intention: piece.intention, intent_type: intentType, message: piece.message, cta: piece.cta, structure: piece.structure, duration_seconds: durationSeconds ?? piece.duration_seconds, formats: formats ?? piece.formats, language: piece.language, fps, evidence_ids: piece.evidence_ids, evidence_target: evidenceTarget, preconditions: intentType === "tutorial" ? piece.requirements.filter((requirement) => !requirement.startsWith("Storyboard exception: ")) : [], steps: intentType === "tutorial" ? selected.flatMap(({steps}) => steps) : [], structure_justification: structureJustification, treatment_hash: treatment?.content_hash ?? null, narrative_copy: narrativeCopy, scenes});
   return validateStoryboard(storyboard, context);
 }
 
