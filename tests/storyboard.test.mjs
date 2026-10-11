@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import test from "node:test";
-import {createStoryboard, validateStoryboard, StoryboardValidationError} from "../src/agency/storyboard.mjs";
+import {createStoryboard, renderStoryboardScriptMarkdown, validateStoryboard, StoryboardValidationError} from "../src/agency/storyboard.mjs";
 import {createInitialState} from "../src/state/store.mjs";
 import {reviewSubject, setReviewSubject, recordReviewOutcome} from "../src/agency/review.mjs";
 import {createGuide, renderGuideMarkdown} from "../src/agency/guide.mjs";
@@ -45,6 +45,20 @@ test("authors versioned explainer and tutorial with distinct approved structures
     assert.deepEqual(storyboard.steps, kind === "tutorial" ? context.evidence.evidence[0].steps : []);
     assert.equal(createStoryboard({...input, version: 2}).storyboard_id, storyboard.storyboard_id);
   }
+});
+
+test("renders a readable evidence-bound production script", () => {
+  const {context, input} = setup("explainer");
+  const storyboard = createStoryboard(input);
+  const markdown = renderStoryboardScriptMarkdown(storyboard, context);
+  assert.match(markdown, /^# Script — Explain assignment/m);
+  assert.match(markdown, /## Complete narration/);
+  assert.match(markdown, /### promise — 0s–8s/);
+  assert.match(markdown, /Visual source: capture-assign/);
+  assert.match(markdown, new RegExp(storyboard.evidence_ids[0]));
+  const changed = structuredClone(storyboard);
+  changed.scenes[0].narration = "Unsupported promise";
+  assert.throws(() => renderStoryboardScriptMarkdown(changed, context), /unsupported text or claim/);
 });
 
 test("accepts approved alternatives without a fixed duration or format", () => {

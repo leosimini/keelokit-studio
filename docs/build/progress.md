@@ -91,6 +91,7 @@ C04 — production and review.
 - `npm run verify`: pass for all tests, portability, Claude Code strict validation, isolated marketplace installation and real plugin inventory load.
 - Read-only live dry run against Keelokit commit `ae9966c4994438332a3ff5c1497ce499ae117c9b`: six sources discovered, strict Claude Code marketplace validation passed, brief/plan/storyboard contracts generated, a real 640×360 Remotion pilot still rendered, mechanical PNG export passed, and visual inspection passed. Overall QA remains limited because the approved dry-run scope excluded audio and a complete timed video; the input repository remained clean at the same commit.
 - The live dry run exposed an intake documentation gap. The start command and orchestration skill now require scope-relevant provider/configuration, limits, capability checks, and safe credential references while explicitly prohibiting raw secrets in prompts or persisted outputs.
+- The same dry run exposed an editorial handoff gap: narration existed only inside `storyboard.json`. Storyboards now render a validated, human-readable Markdown production script with complete narration, timings, on-screen text, visual sources and evidence references; unsupported post-validation edits are rejected.
 
 ## Blockers and limits
 

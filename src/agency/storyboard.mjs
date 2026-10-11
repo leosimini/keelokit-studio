@@ -120,3 +120,43 @@ export function createStoryboard({plan, audiences, state, evidence, assets, bran
   const storyboard = structuredClone({schema_version: 1, storyboard_id: stableId("storyboard", {projectId: plan.project_id, pieceId}), version, project_id: plan.project_id, plan_id: plan.plan_id, plan_version: plan.version, plan_hash: subject.hash, plan_scope: subject.scope, piece_id: pieceId, audience_id: piece.audience_id, intention: piece.intention, intent_type: intentType, message: piece.message, cta: piece.cta, structure: piece.structure, duration_seconds: durationSeconds ?? piece.duration_seconds, formats: formats ?? piece.formats, language: piece.language, fps, evidence_ids: piece.evidence_ids, evidence_target: evidenceTarget, preconditions: intentType === "tutorial" ? piece.requirements.filter((requirement) => !requirement.startsWith("Storyboard exception: ")) : [], steps: intentType === "tutorial" ? selected.flatMap(({steps}) => steps) : [], structure_justification: structureJustification, scenes});
   return validateStoryboard(storyboard, context);
 }
+
+export function renderStoryboardScriptMarkdown(storyboard, context) {
+  validateStoryboard(storyboard, context);
+  const inline = (value) => String(value).replace(/\s+/g, " ").trim();
+  const lines = [
+    `# Script — ${inline(storyboard.intention)}`,
+    "",
+    `Piece: ${storyboard.piece_id}`,
+    `Storyboard: ${storyboard.storyboard_id} v${storyboard.version}`,
+    `Audience: ${storyboard.audience_id}`,
+    `Language: ${storyboard.language}`,
+    `Duration: ${storyboard.duration_seconds} seconds`,
+    `Formats: ${storyboard.formats.map(inline).join(", ")}`,
+    `Status: draft bound to approved plan v${storyboard.plan_version}`,
+    "",
+    "## Core message",
+    "",
+    inline(storyboard.message),
+    "",
+    "## Complete narration",
+    "",
+    storyboard.scenes.map(({narration}) => inline(narration)).filter(Boolean).join(" "),
+    "",
+    "## Scene script"
+  ];
+  for (const scene of storyboard.scenes) {
+    lines.push(
+      "",
+      `### ${inline(scene.section)} — ${scene.start_seconds}s–${scene.end_seconds}s`,
+      "",
+      `- Narration: ${inline(scene.narration || "None")}`,
+      `- On-screen text: ${inline(scene.on_screen_text || "None")}`,
+      `- Product step: ${inline(scene.step ?? "Not applicable")}`,
+      `- Visual source: ${scene.asset_ids.length ? scene.asset_ids.map(inline).join(", ") : "No product asset selected; text-only composition"}`,
+      `- Evidence: ${scene.evidence_ids.map(inline).join(", ")}`
+    );
+  }
+  lines.push("", "## Call to action", "", inline(storyboard.cta), "");
+  return lines.join("\n");
+}
