@@ -10,4 +10,7 @@
 - Fixed: `ready`, resuming from `blocked`, pilot/production and plan approval now require the brief approval, valid render/QA and a current style approval; style approval requires passing editorial reports from a different actor; distribution requires a style approval; the publication queue verifies its strategy and plan.
 - Fixed: renders reject timeline gaps, unapproved assets, assets a component would not display and free-text captions; Remotion no longer writes a bundler cache into the plugin and its browser probe launches the browser.
 - Changed: selected hooks must be evidence-safe and open the piece.
-- Changed: the ZIP is named after its platform and smoke-tested before it is written.
+- Changed: the zip is source-only (about 180 KB), identical on every platform and reproducible; dependencies are installed once with `npm ci --omit=dev`. The router explains this instead of crashing. `releases/keelokit-studio-plugin.zip` is the downloadable copy and `npm run verify` fails when it is stale.
+- Changed: `@anthropic-ai/claude-code` is no longer a dependency; checks use a pinned `npx` call, so installing the plugin no longer downloads a 250 MB binary.
+- Added: `setPieceComponent` is the only writer of piece progress; exports and distribution are bound to the render and storyboard; plans record the brief they were built on; captions export from approved narration; per-scene preview stills; focus emphasis renders; strategy cannot claim high confidence without observed outcomes.
+- Added: `docs/trust-model.md`.

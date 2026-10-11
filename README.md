@@ -53,17 +53,31 @@ Nothing is written into the plugin.
 
 ## Try it
 
-You need Node 22.16 or newer and Claude Code. Rendering needs a Chromium you point it to
-(a headless-shell or Chrome for Testing build). Studio never downloads a browser on its own.
+You need Node 22.16 or newer and Claude Code. Rendering also needs a Chromium you point it to
+(a headless-shell or Chrome for Testing build); Studio never downloads a browser on its own.
 
-Once Studio is merged and tagged, it is installed from the Keelokit marketplace:
+**From the zip** (any platform; it holds only source, like Keelokit's). Download
+[`keelokit-studio-plugin.zip`](https://github.com/leosimini/keelokit-studio/raw/main/releases/keelokit-studio-plugin.zip),
+then:
+
+```bash
+unzip keelokit-studio-plugin.zip -d keelokit-studio
+npm ci --omit=dev --ignore-scripts --prefix keelokit-studio   # once; fetches Remotion's binaries for your machine
+cd /path/to/the/repo/you/want/to/explain
+claude --plugin-dir /path/to/keelokit-studio
+```
+
+Then run `/keelokit-studio:start`. If you skip the `npm ci` step, the command tells you exactly
+what to run.
+
+**From the Keelokit marketplace**, once a reviewed version is pinned there:
 
 ```bash
 claude plugin marketplace add leosimini/keelokit
 claude plugin install keelokit-studio@keelokit
 ```
 
-Before that, or to try a build from source:
+**From source**, to hack on it:
 
 ```bash
 git clone https://github.com/leosimini/keelokit-studio && cd keelokit-studio
@@ -71,13 +85,6 @@ npm ci
 npm run verify
 claude --plugin-dir "$PWD"
 ```
-
-`scripts/package-plugin.sh` builds a self-contained ZIP in `dist/` (about 93 MB, because it
-carries Remotion and Playwright). It is named after the platform it was built on, e.g.
-`keelokit-studio-0.1.0-linux-x64.zip`, because the native renderer binaries inside are specific
-to that platform. Build it on the machine type you will use it on.
-
-Then, in the repo you want to explain, open Claude Code and run `/keelokit-studio:start`.
 
 ## Good to know
 
@@ -87,8 +94,8 @@ Then, in the repo you want to explain, open Claude Code and run `/keelokit-studi
   else you contribute the material and Studio records it as contributed, not as verified.
 - **Voice** and other integrations are optional and only used when you configure them. A voice
   provider never receives a key from the conversation, only an environment-variable name.
-- The rendered MP4 has **no audio track** yet. Narration is in the script and the captions, not
-  in the sound. The manifest says so.
+- The rendered MP4 has **no audio track** yet. Narration is in the script and in exported
+  WebVTT/SRT captions, not in the sound. The manifest says so.
 - Several agents work on each piece, so it uses more tokens than a single chat.
 - Studio checks that a claim is backed by evidence you captured. It cannot tell you the claim
   is a good idea, and the checks are only as good as the evidence you give it.
@@ -103,7 +110,10 @@ npm run verify   # tests, portability, strict plugin validation, install, load
 ```
 
 The install test uses an isolated Claude configuration and a temporary consumer repository.
-Working rules for contributors, human or agent, are in [`AGENTS.md`](AGENTS.md).
+Working rules for contributors, human or agent, are in [`AGENTS.md`](AGENTS.md). What the checks
+protect against, and what they do not, is in [`docs/trust-model.md`](docs/trust-model.md).
+`scripts/package-plugin.sh` rebuilds `releases/keelokit-studio-plugin.zip`; `npm run verify`
+fails if the committed zip no longer matches the sources.
 
 ## License
 

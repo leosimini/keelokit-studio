@@ -16,13 +16,24 @@ cmp -s "$zip_file" "$second" || { echo "package: the zip is not reproducible" >&
 
 size="$(wc -c < "$zip_file")"
 [ "$size" -lt 5000000 ] || { echo "package: zip is $size bytes; expected source only" >&2; exit 1; }
-unzip -Z1 "$zip_file" | grep -q '^\.claude-plugin/plugin\.json$' || { echo "package: plugin.json is not at the zip root" >&2; exit 1; }
-if unzip -Z1 "$zip_file" | grep -E '(^|/)(node_modules|tests|fixtures|\.git)(/|$)|\.map$'; then echo "package: unexpected entries" >&2; exit 1; fi
-if unzip -Z1 "$zip_file" | grep -vE '^[A-Za-z0-9._/@+-]+$'; then echo "package: unsafe file names" >&2; exit 1; fi
+entries="$(unzip -Z1 "$zip_file")"
+grep -qx '.claude-plugin/plugin.json' <<< "$entries" || { echo "package: plugin.json is not at the zip root" >&2; exit 1; }
+if grep -E '(^|/)(node_modules|tests|fixtures|\.git)(/|$)|\.map$' <<< "$entries"; then echo "package: unexpected entries" >&2; exit 1; fi
+if grep -vE '^[A-Za-z0-9._/@+-]+$' <<< "$entries"; then echo "package: unsafe file names" >&2; exit 1; fi
 
 unpacked="$work/plugin"
 mkdir "$unpacked"
 unzip -q "$zip_file" -d "$unpacked"
+
+# The zip committed for download must match the current sources.
+committed="$root_dir/releases/keelokit-studio-plugin.zip"
+if [ -f "$committed" ]; then
+  mkdir "$work/committed"
+  unzip -q "$committed" -d "$work/committed"
+  diff -r "$work/committed" "$unpacked" >/dev/null || { echo "package: releases/keelokit-studio-plugin.zip is stale; run scripts/package-plugin.sh releases/keelokit-studio-plugin.zip" >&2; exit 1; }
+else
+  echo "package: releases/keelokit-studio-plugin.zip is missing" >&2; exit 1
+fi
 
 # Without dependencies the router must say how to install them.
 consumer="$work/consumer"

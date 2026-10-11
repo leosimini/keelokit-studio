@@ -24,7 +24,7 @@ tests/ fixtures/  node:test suite and synthetic products
 | Everything CI should check | `npm run verify` |
 | Unit tests only | `npm test` (rendering and capture tests need a Chromium; set `KEELOKIT_CHROMIUM` or `PLAYWRIGHT_BROWSERS_PATH`) |
 | Strict manifest validation | `npm run validate:plugin` |
-| Self-contained ZIP | `scripts/package-plugin.sh` → `dist/` (platform-tagged, not versioned in git) |
+| Downloadable source zip | `scripts/package-plugin.sh releases/keelokit-studio-plugin.zip`; commit it with any change to shipped files (`npm run verify` fails when it is stale) |
 
 ## Rules
 
@@ -40,5 +40,6 @@ tests/ fixtures/  node:test suite and synthetic products
 
 ## Releases
 
+The zip holds source only and must stay identical on every platform: never put `node_modules` or native binaries in it.
 Never change `version`, create tags or push release branches by hand. A release is requested by
 the maintainer. The Keelokit marketplace entry for Studio should pin a reviewed `sha` or tag.

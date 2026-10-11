@@ -48,14 +48,26 @@ Nada se escribe dentro del plugin.
 Necesitás Node 22.16 o superior y Claude Code. Para renderizar, un Chromium que le indiques
 (build headless-shell o Chrome for Testing). Studio nunca descarga un navegador por su cuenta.
 
-Una vez que Studio esté mergeado y etiquetado, se instala desde el marketplace de Keelokit:
+**Desde el zip** (cualquier plataforma; solo lleva fuentes, como el de Keelokit). Descargá
+[`keelokit-studio-plugin.zip`](https://github.com/leosimini/keelokit-studio/raw/main/releases/keelokit-studio-plugin.zip) y:
+
+```bash
+unzip keelokit-studio-plugin.zip -d keelokit-studio
+npm ci --omit=dev --ignore-scripts --prefix keelokit-studio   # una vez; baja los binarios de Remotion para tu máquina
+cd /ruta/al/repo/que/querés/explicar
+claude --plugin-dir /ruta/a/keelokit-studio
+```
+
+Después corré `/keelokit-studio:start`. Si te saltás el `npm ci`, el comando te dice qué correr.
+
+**Desde el marketplace de Keelokit**, cuando haya una versión revisada fijada ahí:
 
 ```bash
 claude plugin marketplace add leosimini/keelokit
 claude plugin install keelokit-studio@keelokit
 ```
 
-Antes de eso, o para probar desde el código:
+**Desde el código**, para trabajar en él:
 
 ```bash
 git clone https://github.com/leosimini/keelokit-studio && cd keelokit-studio
@@ -63,11 +75,6 @@ npm ci
 npm run verify
 claude --plugin-dir "$PWD"
 ```
-
-`scripts/package-plugin.sh` arma un ZIP autónomo en `dist/` (unos 93 MB, porque incluye Remotion y
-Playwright). Lleva el nombre de la plataforma donde se construyó, por ejemplo
-`keelokit-studio-0.1.0-linux-x64.zip`, porque los binarios nativos del renderer son específicos
-de esa plataforma. Construilo en el tipo de máquina donde lo vas a usar.
 
 ## Para tener en cuenta
 
