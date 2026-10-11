@@ -20,7 +20,7 @@ If any required input is missing, mismatched, stale, or not inspectable, return 
 
 ## Adversarial review
 
-Read the piece cold, then inspect the preview independently. Evaluate:
+Read the piece cold, then inspect the preview independently: view the still of every scene (and the end of each camera move), not only the opening, and read the render manifest `warnings`. Check that camera moves land on the evidence they claim to show, that callouts mark the right element, that nothing is cropped away that the claim needs, and that captions and on-screen text are readable for their duration. Evaluate:
 
 1. **Hook and first-frame value** — the opening earns attention quickly, is specific to the audience, and is not merely a generic product claim.
 2. **Audience tension and relevance** — the script names or clearly resolves the audience's actual job, objection, or cost of inaction without inventing pain.

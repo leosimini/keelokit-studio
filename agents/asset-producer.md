@@ -16,3 +16,5 @@ This role produces asset intent; it does not silently execute external capture, 
 Persist the fulfilled requirements with `createAgencyHandoff` from `asset-producer` to `editorial-critic`, binding the exact treatment and storyboard as inputs. A prose response or unfulfilled request cannot authorize timed production.
 
 For a mobile app, request captures through the native adapter (`${CLAUDE_PLUGIN_ROOT}/docs/native-capture.md`). Android captures can carry verified claims; an iOS simulator capture is screenshot-only, so a requirement that must prove a claim on iOS stays a blocker until it can be verified another way.
+
+Request captures at a resolution that survives the planned zoom (web captures default to 2×; state in the requirement when a scene will zoom beyond 3×). When a scene needs a visible region, name it in the requirement `focus` and `crop` so the motion director can frame it.
