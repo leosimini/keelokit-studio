@@ -132,6 +132,10 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
   const subtitles = optionalSceneMap("subtitles", renderConfig.subtitles, sceneIds, (value) => typeof value === "string");
   const stepLabels = optionalSceneMap("step_labels", renderConfig.step_labels, sceneIds, (value) => value === null || typeof value === "string");
   const highlights = optionalSceneMap("highlights", renderConfig.highlights, sceneIds, (value) => value === null || (value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 2 && Number.isFinite(value.x) && value.x >= 0 && value.x <= 100 && Number.isFinite(value.y) && value.y >= 0 && value.y <= 100));
+  for (const [sceneId, text] of Object.entries(subtitles)) {
+    const scene = storyboard.scenes.find(({scene_id}) => scene_id === sceneId);
+    if (text !== "" && ![scene.narration, scene.on_screen_text].includes(text)) throw new RenderAdapterError(`renderConfig.subtitles.${sceneId} must equal the scene narration or on-screen text; free caption copy bypasses claim validation`);
+  }
   const scenes = storyboard.scenes.map((scene) => {
     const component = sceneComponents[scene.scene_id];
     if (!components.has(component)) throw new RenderAdapterError(`Scene ${scene.scene_id} requires a supported component selection`);
@@ -202,7 +206,7 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
     asset_states: assetStates,
     evidence_ids: selectedEvidence,
     evidence_hashes: evidenceHashes,
-    configuration: {width: renderConfig.width, height: renderConfig.height, fps: storyboard.fps, duration_in_frames: inputProps.duration_in_frames, motion_spec_id: motionSpec?.motion_spec_id ?? null},
+    configuration: {width: renderConfig.width, height: renderConfig.height, fps: storyboard.fps, duration_in_frames: inputProps.duration_in_frames, motion_spec_id: motionSpec?.motion_spec_id ?? null, audio_tracks: 0, narration_audible: false, subtitled_scene_ids: scenes.filter(({subtitle}) => subtitle !== "").map(({scene_id}) => scene_id)},
     qa_status: "not-reviewed"
   };
   return {inputProps, manifest};
@@ -219,7 +223,7 @@ export async function renderRemotionVideo(options) {
   const output = resolve(bundleDirectory, "piece.mp4");
   try {
     const [{bundle}, {renderMedia, selectComposition}] = await Promise.all([import("@remotion/bundler"), import("@remotion/renderer")]);
-    const serveUrl = await bundle({entryPoint: resolve(import.meta.dirname, "entry.mjs"), outDir: resolve(bundleDirectory, "bundle"), logLevel: "error"});
+    const serveUrl = await bundle({entryPoint: resolve(import.meta.dirname, "entry.mjs"), outDir: resolve(bundleDirectory, "bundle"), enableCaching: false, logLevel: "error"});
     const composition = await selectComposition({serveUrl, id: "KeelokitStudioPiece", inputProps: prepared.inputProps, browserExecutable: options.browserExecutable, logLevel: "error"});
     await renderMedia({serveUrl, composition, inputProps: prepared.inputProps, browserExecutable: options.browserExecutable, codec: "h264", outputLocation: output, logLevel: "error"});
     const bytes = await readFile(output);
@@ -234,7 +238,7 @@ export async function renderRemotionPreview(options) {
   const bundleDirectory = await mkdtemp(resolve(tmpdir(), "keelokit-studio-remotion-"));
   try {
     const [{bundle}, {renderStill, selectComposition}] = await Promise.all([import("@remotion/bundler"), import("@remotion/renderer")]);
-    const serveUrl = await bundle({entryPoint: resolve(import.meta.dirname, "entry.mjs"), outDir: bundleDirectory, logLevel: "error"});
+    const serveUrl = await bundle({entryPoint: resolve(import.meta.dirname, "entry.mjs"), outDir: bundleDirectory, enableCaching: false, logLevel: "error"});
     const composition = await selectComposition({serveUrl, id: "KeelokitStudioPiece", inputProps: prepared.inputProps, browserExecutable: options.browserExecutable, logLevel: "error"});
     const result = await renderStill({serveUrl, composition, inputProps: prepared.inputProps, browserExecutable: options.browserExecutable, imageFormat: "png", output: null, logLevel: "error"});
     if (!result.buffer) throw new RenderAdapterError("Remotion did not return an in-memory preview", "render_failed");

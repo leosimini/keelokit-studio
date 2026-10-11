@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import test from "node:test";
-import {mkdtemp, rm, writeFile} from "node:fs/promises";
+import {access, mkdtemp, rm, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {resolve} from "node:path";
 import {chromiumExecutable} from "./support/chromium.mjs";
@@ -139,4 +139,19 @@ test("capability is blocked when the browser answers --version but cannot launch
   } finally {
     await rm(directory, {recursive: true, force: true});
   }
+});
+
+test("rendering never writes a bundler cache into the plugin installation", {timeout: 120000}, async (context) => {
+  const capability = await remotionRenderCapability({browserExecutable: chromiumExecutable});
+  if (capability.status !== "available") return context.skip(capability.reason);
+  await renderRemotionPreview({...input(), browserExecutable: chromiumExecutable});
+  await assert.rejects(() => access(resolve(import.meta.dirname, "../node_modules/.cache/webpack")));
+});
+
+test("subtitles must come from scene text and the manifest states that no audio is rendered", () => {
+  assert.throws(() => prepareRemotionRender(input({renderConfig: {...renderConfig, subtitles: {"scene-task": "Guaranteed 10x ROI"}}})), /bypasses claim validation/);
+  const {manifest} = prepareRemotionRender(input({renderConfig: {...renderConfig, subtitles: {"scene-task": storyboard.scenes[0].narration}}}));
+  assert.equal(manifest.configuration.audio_tracks, 0);
+  assert.equal(manifest.configuration.narration_audible, false);
+  assert.deepEqual(manifest.configuration.subtitled_scene_ids, ["scene-task"]);
 });
