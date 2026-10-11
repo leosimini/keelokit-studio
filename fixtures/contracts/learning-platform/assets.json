@@ -1,0 +1,1 @@
+{"schema_version":1,"project_id":"learning-demo","assets":[{"asset_id":"capture-publish","kind":"capture","path":"media/studio/captures/publish.png","sha256":"1111111111111111111111111111111111111111111111111111111111111111","origin":{"type":"captured","source":"learning-demo build demo-7","license":null,"observed_at":"2026-10-11"},"evidence_id":"ev-publish"}]}

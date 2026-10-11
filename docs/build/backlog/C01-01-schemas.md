@@ -1,6 +1,6 @@
 # C01-01 — Versioned schemas and cross-reference validation
 
-Status: todo
+Status: verified
 
 - Requirements: ST-003, ST-004, ST-007, ST-009, ST-013, ST-015
 - Evaluations: EV-002
@@ -8,6 +8,6 @@ Status: todo
 - Output: initial versioned schemas plus cross-reference validator and synthetic fixtures
 - Dependencies: C00
 - Acceptance: reject missing audience, intention, CTA, evidence, or asset origin references; accept variable audience counts without code changes
-- Verification: unit and fixture tests
+- Verification: 7 contract tests, two synthetic sectors with one and three audiences, both fixture CLI validations, and independent review passed on 2026-10-11
 - Limit: no client, industry, or fixed audience defaults
 

@@ -1,0 +1,1 @@
+{"schema_version":1,"project_id":"field-service-demo","audiences":[{"audience_id":"dispatchers","public_name":"Dispatch coordinators","jobs":["Assign urgent work"],"stage":"use","vocabulary":["work order"],"objections":[],"related_roles":["dispatcher"],"ctas":["Open the dispatch board"],"source_ids":["src-readme"],"confirmation_status":"confirmed"}]}

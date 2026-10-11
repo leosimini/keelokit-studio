@@ -1,0 +1,1 @@
+{"schema_version":1,"project_id":"learning-demo","product_type":"learning platform","surfaces":["web","api"],"build":"demo-7","manual_path":"docs/manual.md","sources":[{"source_id":"src-manual","location":"docs/manual.md","observed_at":"2026-10-11","status":"confirmed"}],"capabilities":["web-capture","api-evidence"],"gaps":[]}

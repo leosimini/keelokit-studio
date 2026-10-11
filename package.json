@@ -9,13 +9,15 @@
   },
   "scripts": {
     "test": "node --test tests/*.test.mjs",
+    "validate:contracts": "node scripts/validate-contracts.mjs",
     "validate:plugin": "claude plugin validate .claude-plugin/plugin.json --strict --json && claude plugin validate .claude-plugin/marketplace.json --strict --json && claude plugin validate commands --strict --json && claude plugin validate skills --strict --json",
     "test:install": "bash scripts/test-install.sh",
     "test:load": "node scripts/test-load.mjs",
     "verify": "npm run test && npm run validate:plugin && npm run test:install && npm run test:load"
   },
   "devDependencies": {
-    "@anthropic-ai/claude-code": "2.1.296"
+    "@anthropic-ai/claude-code": "2.1.296",
+    "ajv": "8.20.0"
   }
 }
 

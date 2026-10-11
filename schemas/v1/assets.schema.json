@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keelokit.com/studio/schemas/v1/assets.schema.json",
+  "title": "Keelokit Studio asset inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project_id", "assets"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "project_id": {"type": "string", "minLength": 1},
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["asset_id", "kind", "path", "sha256", "origin"],
+        "properties": {
+          "asset_id": {"type": "string", "minLength": 1},
+          "kind": {"enum": ["capture", "logo", "font", "audio", "video", "image", "document", "other"]},
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "origin": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "source"],
+            "properties": {
+              "type": {"enum": ["captured", "provided", "generated", "derived"]},
+              "source": {"type": "string", "minLength": 1},
+              "license": {"type": ["string", "null"]},
+              "observed_at": {"type": ["string", "null"]}
+            }
+          },
+          "evidence_id": {
+            "oneOf": [
+              {"type": "string", "minLength": 1},
+              {"type": "null"}
+            ]
+          }
+        }
+      }
+    }
+  }
+}
+

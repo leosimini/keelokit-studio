@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keelokit.com/studio/schemas/v1/product-evidence.schema.json",
+  "title": "Keelokit Studio product evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project_id", "evidence"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "project_id": {"type": "string", "minLength": 1},
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["evidence_id", "feature_or_journey", "role", "availability", "build", "locale", "steps", "result", "capture_paths", "hashes", "allowed_claims"],
+        "properties": {
+          "evidence_id": {"type": "string", "minLength": 1},
+          "feature_or_journey": {"type": "string", "minLength": 1},
+          "role": {"type": "string", "minLength": 1},
+          "availability": {"enum": ["available", "disabled", "failed", "unknown"]},
+          "flags": {"type": "array", "items": {"type": "string"}},
+          "build": {"type": "string", "minLength": 1},
+          "commit": {"type": ["string", "null"]},
+          "locale": {"type": "string", "minLength": 1},
+          "steps": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1},
+          "result": {"type": "string", "minLength": 1},
+          "capture_paths": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "hashes": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "allowed_claims": {"type": "array", "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    }
+  }
+}
+

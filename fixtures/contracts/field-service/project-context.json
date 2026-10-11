@@ -1,0 +1,1 @@
+{"schema_version":1,"project_id":"field-service-demo","product_type":"field service software","surfaces":["web"],"build":"demo-1","manual_path":null,"sources":[{"source_id":"src-readme","location":"README.md","observed_at":"2026-10-11","status":"confirmed"}],"capabilities":["web-capture"],"gaps":[]}

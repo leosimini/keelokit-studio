@@ -4,7 +4,7 @@ Updated: 2026-10-11.
 
 ## Active milestone
 
-C00 — base and compatibility.
+C01 — contracts and state.
 
 | Story | Status | Evidence |
 | --- | --- | --- |
@@ -12,6 +12,7 @@ C00 — base and compatibility.
 | C00-02 | verified | runtime, plugin layout, renderer, licensing, and alternative recorded in the C00 decision |
 | C00-03 | verified | strict validation, isolated marketplace installation, and real `--plugin-dir` inventory passed |
 | C00-04 | verified | progress, decision, limits, evidence, and C00/C01 backlog are tracked in git |
+| C01-01 | verified | six versioned schemas, cross-reference validator, two sector fixtures, and 7 contract tests pass |
 
 ## Verification ledger
 
@@ -19,6 +20,10 @@ C00 — base and compatibility.
 - `npm run validate:plugin`: pass for plugin manifest, marketplace manifest, commands, and skills under Claude Code 2.1.296 strict mode; no warnings.
 - `npm run test:install`: pass; isolated local marketplace added and `keelokit-studio@keelokit-studio` 0.1.0 installed and enabled outside the plugin repository.
 - `npm run test:load`: pass; Claude Code init inventory contains `keelokit-studio:start` and `keelokit-studio:keelokit-studio`. Authenticated inference remains unavailable.
+- `npm run validate:contracts -- fixtures/contracts/field-service`: pass.
+- `npm run validate:contracts -- fixtures/contracts/learning-platform`: pass with three audiences, compared with one in the other fixture.
+- `npm test`: pass, including EV-002 negative cases for required piece fields, provenance, dependencies, contradictory metadata, duplicate IDs, and missing references.
+- Independent high-reasoning review found four false negatives; all were fixed and the reviewer confirmed closure without regressions.
 
 ## Blockers and limits
 
@@ -27,5 +32,5 @@ C00 — base and compatibility.
 
 ## Next
 
-Implement C01-01 schemas and cross-reference validation.
+Implement C01-02 persistent consumer state, events, and version/hash-bound approvals.
 

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keelokit.com/studio/schemas/v1/project-context.schema.json",
+  "title": "Keelokit Studio project context",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project_id", "product_type", "surfaces", "sources", "capabilities", "gaps"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "project_id": {"type": "string", "minLength": 1},
+    "product_type": {"type": "string", "minLength": 1},
+    "surfaces": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
+    "build": {"type": ["string", "null"]},
+    "manual_path": {"type": ["string", "null"]},
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_id", "location", "observed_at", "status"],
+        "properties": {
+          "source_id": {"type": "string", "minLength": 1},
+          "location": {"type": "string", "minLength": 1},
+          "observed_at": {"type": "string", "minLength": 1},
+          "status": {"enum": ["confirmed", "inferred", "contradictory", "stale", "missing"]}
+        }
+      }
+    },
+    "capabilities": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["gap_id", "description", "impact", "owner"],
+        "properties": {
+          "gap_id": {"type": "string", "minLength": 1},
+          "description": {"type": "string", "minLength": 1},
+          "impact": {"enum": ["blocking", "limited", "informational"]},
+          "owner": {"type": ["string", "null"]}
+        }
+      }
+    }
+  }
+}
+
