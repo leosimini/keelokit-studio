@@ -70,3 +70,12 @@ test("refuses a queue from a tampered strategy, a stale plan or an unapproved pl
   assert.throws(() => buildPublicationQueue({...args, plan: {...plan, suites: [{...plan.suites[0], pieces: plan.suites[0].pieces.map((piece, index) => index === 0 ? {...piece, intention: "Changed after approval"} : piece)}]}}), /exact current plan subject/);
   assert.throws(() => buildPublicationQueue({...args, state: createInitialState(plan.project_id)}), /plan approval/);
 });
+
+test("an unobserved hypothesis cannot claim high confidence or hide that nothing is known", () => {
+  const high = candidate("one", "piece-assign", 2, 20); high.impact_hypothesis.confidence = "high";
+  assert.throws(() => strategy([high]), /High confidence requires/);
+  const silent = candidate("one", "piece-assign", 2, 20); silent.impact_hypothesis.unknowns = [];
+  assert.throws(() => strategy([silent]), /still unknown/);
+  const missing = candidate("one", "piece-assign", 2, 20); delete missing.impact_hypothesis.observation_ids;
+  assert.throws(() => strategy([missing]), StrategyError);
+});

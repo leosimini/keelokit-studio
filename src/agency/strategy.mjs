@@ -62,6 +62,9 @@ export function createContentStrategy({projectId, version, plan, audiences, plan
     score(hypothesis?.objective_fit, "objective_fit"); score(hypothesis?.expected_impact, "expected_impact");
     if (!Object.hasOwn(confidenceValue, hypothesis?.confidence)) throw new StrategyError("confidence must be low, medium or high");
     strings(hypothesis.assumptions, "assumptions"); strings(hypothesis.unknowns, "unknowns");
+    if (!Array.isArray(hypothesis.observation_ids)) throw new StrategyError("observation_ids must be an array (empty when nothing was observed)");
+    if (hypothesis.confidence === "high" && hypothesis.observation_ids.length === 0) throw new StrategyError("High confidence requires at least one cited performance observation; a hypothesis without outcomes is at most medium");
+    if (hypothesis.unknowns.length === 0 && hypothesis.observation_ids.length === 0) throw new StrategyError("A hypothesis with no observed outcomes must list what is still unknown");
     for (const id of hypothesis.observation_ids) {
       const observation = observationById.get(id);
       if (!observation) throw new StrategyError(`Unknown performance observation ${id}`);
