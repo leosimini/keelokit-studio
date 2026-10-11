@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import {resolve} from "node:path";
-import {validateContracts} from "../src/contracts/validate.mjs";
+await import("./require-deps.mjs");
+const {validateContracts} = await import("../src/contracts/validate.mjs");
 
 if (!process.argv[2]) {
   console.error("Usage: validate-contracts <contracts-directory>");

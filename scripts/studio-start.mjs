@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import {resolve} from "node:path";
-import {startOrResume} from "../src/agency/start.mjs";
+await import("./require-deps.mjs");
+const {startOrResume} = await import("../src/agency/start.mjs");
 
 function parseOptions(arguments_) {
   const supported = new Set(["--project-root", "--project-id"]);

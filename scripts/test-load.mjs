@@ -6,12 +6,14 @@ import {fileURLToPath} from "node:url";
 import {spawnSync} from "node:child_process";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const claudeCommand = (process.env.CLAUDE_BIN ?? "npx --yes @anthropic-ai/claude-code@2.1.296").split(" ");
 const config = await mkdtemp(resolve(tmpdir(), "keelokit-studio-load-"));
 
 try {
   const result = spawnSync(
-    resolve(root, "node_modules/.bin/claude"),
+    ...claudeCommand.slice(0, 1),
     [
+      ...claudeCommand.slice(1),
       "--plugin-dir",
       root,
       "--print",

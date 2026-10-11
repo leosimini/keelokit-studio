@@ -13,6 +13,8 @@ Run the persisted start router from the consumer project before choosing an acti
 node "${CLAUDE_PLUGIN_ROOT}/scripts/studio-start.mjs" --project-root "$PWD" --project-id "<confirmed-project-id>"
 ```
 
+If the command exits with status 3, dependencies are not installed on this machine: tell the user, run the `npm ci --omit=dev --ignore-scripts --prefix` command it prints (a one-time install, nothing else is written into the plugin), and run the router again.
+
 Follow the returned action. Use the implemented discovery, intake, audience, brief, plan, evidence, storyboard, pilot, production, QA, guide, distribution and dashboard contracts. Ask for explicit approval of the exact brief, plan and style subject at their gates. Keep production, verification and publication annotations separate. Never simulate an unavailable surface or automatic publication.
 
 Once a representative script and preview exist, delegate their cold review to the read-only `editorial-critic` agent. Bind its report to the exact piece, storyboard revision and preview/export hash. A `CHANGES REQUESTED` or `NOT REVIEWABLE` verdict blocks style approval and batch production until the author revises the piece and the critic reviews the new revision. A critic `PASS` is not owner approval and does not predict channel performance.

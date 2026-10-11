@@ -2,9 +2,10 @@
 import {createServer} from "node:http";
 import {readFile} from "node:fs/promises";
 import {resolve} from "node:path";
-import {loadDashboard, saveDashboard, setPublication} from "../src/dashboard/store.mjs";
-import {renderDashboardHtml} from "../src/dashboard/html.mjs";
-import {resolveConsumerPath} from "../src/core/paths.mjs";
+await import("./require-deps.mjs");
+const {loadDashboard, saveDashboard, setPublication} = await import("../src/dashboard/store.mjs");
+const {renderDashboardHtml} = await import("../src/dashboard/html.mjs");
+const {resolveConsumerPath} = await import("../src/core/paths.mjs");
 
 const arguments_ = process.argv.slice(2);
 const projectRoot = resolve(arguments_[0] ?? ".");

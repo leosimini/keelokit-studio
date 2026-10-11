@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import {resolve} from "node:path";
-import {createInitialState, initializeState, loadState} from "../src/state/store.mjs";
+await import("./require-deps.mjs");
+const {createInitialState, initializeState, loadState} = await import("../src/state/store.mjs");
 
 const [command, rootArgument, projectId] = process.argv.slice(2);
 const projectRoot = resolve(rootArgument ?? ".");
