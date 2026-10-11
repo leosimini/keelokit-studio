@@ -89,6 +89,8 @@ export function setPublication(dashboard, {pieceId, reviewId, channel, published
   const next = structuredClone(dashboard);
   const piece = next.pieces.find(({piece_id}) => piece_id === pieceId);
   if (!piece) throw new DashboardError(`Unknown piece ${pieceId}`);
+  if (published && !publishedAt) throw new DashboardError("A publication annotation requires the date it was published");
+  if (published && !["ready", "published"].includes(piece.status)) throw new DashboardError(`Piece ${pieceId} is ${piece.status}; only a ready piece can be annotated as published`);
   const index = piece.publications.findIndex((item) => item.review_id === reviewId && item.channel === channel);
   if (index === -1) throw new DashboardError("Publication review/channel must already be configured for the piece");
   const entry = {review_id: reviewId, channel, published, url, published_at: publishedAt, updated_at: updatedAt};

@@ -57,15 +57,15 @@ test("rejects executable artifact paths and invalid publication metadata", () =>
   const dashboard = sample(); dashboard.pieces[0].previews[0].path = "javascript:alert(1)";
   assert.throws(() => renderDashboardHtml(createDashboard({projectId: dashboard.project_id, suites: dashboard.suites, pieces: dashboard.pieces})), /portable/);
   const valid = sample();
-  assert.throws(() => setPublication(valid, {pieceId: "piece-one", reviewId: "unknown", channel: "configured-channel", published: true}), /already be configured/);
-  assert.throws(() => setPublication(valid, {pieceId: "piece-one", reviewId: "review-one", channel: "configured-channel", published: true, url: "https://", updatedAt: "not-a-date"}), /valid HTTP/);
+  assert.throws(() => setPublication(valid, {pieceId: "piece-one", reviewId: "unknown", channel: "configured-channel", published: true, publishedAt: "2026-10-11T16:00:00.000Z"}), /already be configured/);
+  assert.throws(() => setPublication(valid, {pieceId: "piece-one", reviewId: "review-one", channel: "configured-channel", published: true, url: "https://", publishedAt: "2026-10-11T16:00:00.000Z", updatedAt: "not-a-date"}), /valid HTTP/);
 });
 
 test("rejects publication URL leakage after unmark and stale concurrent saves", async () => {
   const root = await mkdtemp(join(tmpdir(), "studio-dashboard-"));
   await initializeDashboard(root, sample());
   const first = await loadDashboard(root), stale = await loadDashboard(root);
-  await saveDashboard(root, setPublication(first, {pieceId: "piece-one", reviewId: "review-one", channel: "configured-channel", published: true, updatedAt: "2026-10-11T16:00:00.000Z"}));
+  await saveDashboard(root, setPublication(first, {pieceId: "piece-one", reviewId: "review-one", channel: "configured-channel", published: true, publishedAt: "2026-10-11T16:00:00.000Z", updatedAt: "2026-10-11T16:00:00.000Z"}));
   await assert.rejects(() => saveDashboard(root, stale), /revision changed/);
 });
 
@@ -116,4 +116,11 @@ test("dashboard server only answers loopback Host/Origin, requires JSON and stam
   } finally {
     child.kill();
   }
+});
+
+test("publication annotations need a date and a ready piece", () => {
+  const base = {pieceId: "piece-one", reviewId: "review-one", channel: "configured-channel", published: true};
+  assert.throws(() => setPublication(sample(), {...base, url: "https://example.test/p"}), /date/);
+  const draft = sample(); draft.pieces[0].status = "draft";
+  assert.throws(() => setPublication(draft, {...base, publishedAt: "2026-10-11T16:00:00.000Z"}), /only a ready piece/);
 });
