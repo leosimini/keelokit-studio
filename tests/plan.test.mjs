@@ -78,3 +78,12 @@ test("plan enforces the brief audience, message, channels, and complete inputs",
   assert.throws(() => createContentPlan({...base, suiteCandidates: suite(missingCost)}), /estimated_cost/);
 });
 
+
+test("a plan records the exact brief it was built on", async () => {
+  const {reviewSubject: subjectOf} = await import("../src/agency/review.mjs");
+  const ctx = context("product-a", [candidate("member", "Members", "activation")]);
+  const audienceId = ctx.audiences.audiences[0].audience_id;
+  const built = createContentPlan({projectId: "product-a", version: 1, ...ctx, knownEvidenceIds: [], suiteCandidates: [{key: "activate", objective: "activation", priority: 1, dependencies: [], budget: null, review_criteria: ["Clear"], pieces: [piece("intro", audienceId)]}], pending: [], outOfScope: []});
+  assert.equal(built.source_brief.hash, subjectOf({kind: "brief", scope: "any", document: ctx.brief, audiences: ctx.audiences}).hash);
+  assert.equal(subjectOf({kind: "plan", scope: "plan-main", document: built, audiences: ctx.audiences}).brief_hash, built.source_brief.hash);
+});

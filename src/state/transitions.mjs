@@ -88,7 +88,11 @@ export function transitionEngagement(state, target, options = {}, now = new Date
 
   const planSubjectKey = options.planSubject ?? "plan";
   let planSubject;
-  if (["pilot_in_progress", "producing"].includes(target)) planSubject = requireApproval(state, "plan", planSubjectKey, target);
+  if (["pilot_in_progress", "producing"].includes(target)) {
+    planSubject = requireApproval(state, "plan", planSubjectKey, target);
+    const briefSubject = state.versions[options.briefSubject ?? "brief"];
+    if (planSubject.brief_hash !== undefined && planSubject.brief_hash !== briefSubject.hash) throw new TransitionError(`${target} requires a plan built on the current approved brief; the brief changed after the plan was approved`);
+  }
   if (target === "pilot_in_progress") {
     if (!Array.isArray(options.pilotPieceIds) || options.pilotPieceIds.length === 0) throw new TransitionError("pilot_in_progress requires at least one planned pilot piece");
     const pieces = new Map(state.pieces.map((piece) => [piece.piece_id, piece]));

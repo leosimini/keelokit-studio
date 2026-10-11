@@ -1,3 +1,4 @@
+import {reviewSubject} from "./review.mjs";
 import Ajv2020 from "ajv/dist/2020.js";
 import {readFile} from "node:fs/promises";
 import {resolve} from "node:path";
@@ -121,7 +122,7 @@ export function createContentPlan({projectId, version, brief, audiences, knownEv
   }));
   if (unknownDependencies.length > 0) throw new PlanValidationError(unknownDependencies);
 
-  const plan = {schema_version: 1, project_id: projectId, plan_id: stableId("plan", {projectId}), version, suites, pending: [...pending], out_of_scope: [...outOfScope]};
+  const plan = {schema_version: 1, project_id: projectId, plan_id: stableId("plan", {projectId}), version, source_brief: {version: brief.version, hash: reviewSubject({kind: "brief", scope: "brief", document: brief, audiences}).hash}, suites, pending: [...pending], out_of_scope: [...outOfScope]};
   if (!validatePlan(plan)) throw new PlanValidationError((validatePlan.errors ?? []).map((error) => `content-plan.json${error.instancePath || "/"}: ${error.message}`));
 
   const errors = [];

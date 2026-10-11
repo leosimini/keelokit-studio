@@ -192,3 +192,10 @@ test("piece components are advanced only through setPieceComponent and status is
   assert.throws(() => setPieceComponent(state, "piece-x", "qa", "valid", {artifactHash: briefHash}), /not persisted/);
   assert.ok(state.events.some((event) => event.type === "piece.component" && event.details.component === "qa"));
 });
+
+test("a plan approved on an older brief cannot start production after the brief changes", () => {
+  let state = awaitingPlan();
+  state = setCurrentSubject(state, "plan", {scope: "plan-main", version: 1, hash: planHash, piece_ids: ["piece-pilot"], brief_hash: `sha256:${"1".repeat(64)}`});
+  state = addApproval(state, approval("plan-v1", "plan", "plan-main", planHash));
+  assert.throws(() => transitionEngagement(state, "pilot_in_progress", {pilotPieceIds: ["piece-pilot"]}), /brief changed/);
+});

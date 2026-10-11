@@ -56,7 +56,7 @@ export function reviewSubject({kind, scope, document, audiences}) {
   assertReviewInputs(kind, document, audiences);
   const pieceIds = kind === "plan" ? document.suites.flatMap(({pieces}) => pieces.map(({piece_id}) => piece_id)) : [];
   if (new Set(pieceIds).size !== pieceIds.length) throw new ReviewError("Reviewed plan must contain unique piece IDs");
-  return {kind, project_id: document.project_id, scope, version: document.version, hash: contentHash({document, audiences: scopedAudiences(kind, document, audiences)}), piece_ids: pieceIds};
+  return {kind, project_id: document.project_id, scope, version: document.version, hash: contentHash({document, audiences: scopedAudiences(kind, document, audiences)}), piece_ids: pieceIds, ...(kind === "plan" && document.source_brief ? {brief_hash: document.source_brief.hash} : {})};
 }
 
 export function setReviewSubject(state, subjectKey, subject, now) {
