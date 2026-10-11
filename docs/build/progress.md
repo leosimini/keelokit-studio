@@ -4,7 +4,7 @@ Updated: 2026-10-11.
 
 ## Active milestone
 
-C02 — agency workflow.
+C03 — identity, evidence, and capture.
 
 | Story | Status | Evidence |
 | --- | --- | --- |
@@ -21,6 +21,7 @@ C02 — agency workflow.
 | C02-03 | verified | project-defined audiences and a versioned sourced brief preserve explicit tone/voice confirmation and material review fields |
 | C02-04 | verified | objective-led suites validate brief scope, evidence needs, execution order, dependency graphs, costs, pending work, and exclusions |
 | C02-05 | verified | review subjects derive plan scope, bind exact documents and relevant audiences, expose material fields, and record explicit approval or revocation |
+| C02-06 | verified | start initializes once and resumes persisted decisions, approvals, renders, jobs, blockers, and material changes by active scope |
 
 ## Verification ledger
 
@@ -48,6 +49,8 @@ C02 — agency workflow.
 - Independent C02-04 review found five plan integrity defects plus a combined suite/piece deadlock; all were fixed and the reviewer confirmed no remaining P1/P2 findings.
 - `node --test tests/review.test.mjs`: pass; covers document-derived piece scope, exact presented version/hash, changes-requested revocation, relevant-audience snapshots, silence/cross-kind rejection, and complete plan review fields.
 - Independent C02-05 review found one unauthorized-piece P1 and five approval/review P2 defects; all were fixed and the reviewer confirmed no remaining P1/P2 findings.
+- `node --test tests/start.test.mjs`: pass; covers initial/repeated start, delta intake, plan approval, rendered pieces, uncertain jobs, scoped blockers, selective changes, loaded-state authority, and CLI validation.
+- Independent C02-06 review found four re-entry/CLI defects plus one cross-scope refresh defect; all were fixed and the reviewer confirmed no remaining P1/P2 findings.
 
 ## Blockers and limits
 
@@ -56,5 +59,5 @@ C02 — agency workflow.
 
 ## Next
 
-Implement C02-06 start/resume orchestration without repeating valid work.
+Prepare C03 story records, then implement C03-01 brand extraction and a reviewable visual reference.
 

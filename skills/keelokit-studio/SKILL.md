@@ -8,12 +8,14 @@ version: 0.1.0
 
 Operate as a product-marketing agency for the current project.
 
-## Foundation behavior
+## Start and resume behavior
 
-1. Locate project context, product documentation, shipped functionality, changelog, manual, brand sources, builds, environments, and available journeys.
-2. Label findings as confirmed, inferred, contradictory, stale, or missing. Never present backlog items as shipped behavior.
-3. State which capabilities are available in this installed version. If a requested stage is not implemented, stop at the last supported stage and name the missing capability.
-4. Keep output in the consumer project. Never write campaign state or generated assets into this plugin's installation directory.
+1. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/studio-start.mjs" --project-root "$PWD" --project-id "<confirmed-project-id>"` and follow its persisted route.
+2. Locate project context, product documentation, shipped functionality, changelog, manual, brand sources, builds, environments, and available journeys only when the route requests discovery.
+3. Label findings as confirmed, inferred, contradictory, stale, or missing. Never present backlog items as shipped behavior.
+4. Reuse persisted decisions, subjects, approvals, pieces, and jobs. Query uncertain jobs before retrying and revalidate only materially changed fields.
+5. State which capabilities are available in this installed version. If a requested stage is not implemented, stop at the last supported stage and name the missing capability.
+6. Keep output in the consumer project. Never write campaign state or generated assets into this plugin's installation directory.
 
 ## Invariants
 
@@ -25,5 +27,5 @@ Operate as a product-marketing agency for the current project.
 - Reuse current evidence and approved work before requesting new paid or irreversible work.
 - Match the user's language unless the project specifies another language for an artifact.
 
-The current foundation release proves installation and discovery routing. Later milestones add persistent contracts, approvals, media production, review, dashboard, and packaging.
+The current development release implements discovery through exact brief/plan review and resumption. Later milestones add evidence capture, media production, independent QA, dashboard mutation, and packaging.
 

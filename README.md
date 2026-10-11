@@ -2,7 +2,7 @@
 
 Keelokit Studio is a generic Claude Code plugin for evidence-backed product marketing. It is designed to discover product context, close relevant gaps, define audiences and strategy, require explicit approvals, and produce reviewable explainers, tutorials, guides, and social adaptations.
 
-The repository is under active construction. The current foundation exposes `/keelokit-studio:start`, validates the plugin structure, and proves isolated installation. Persistent campaign state and production capabilities are added milestone by milestone; the command reports unavailable stages instead of pretending they work.
+The repository is under active construction. `/keelokit-studio:start` now persists and resumes discovery, selective intake, audiences, brief, planning, and exact review subjects. Media production and later delivery capabilities remain gated; the command reports unavailable stages instead of pretending they work.
 
 ## Development checks
 

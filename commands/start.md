@@ -7,5 +7,11 @@ argument-hint: Optional objective or project context
 
 Use the `keelokit-studio` skill to start or resume the engagement described by `$ARGUMENTS`.
 
-At this foundation stage, perform discovery only: identify available project sources, report missing context, and explain which later approval gates apply. Do not invent product behavior, start paid work, publish content, or write campaign state until the relevant implementation milestone is available.
+Run the persisted start router from the consumer project before choosing an action:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/studio-start.mjs" --project-root "$PWD" --project-id "<confirmed-project-id>"
+```
+
+Follow the returned action. Use the implemented context/manual discovery, selective intake, audience, brief, plan, and review contracts. Ask for explicit approval of the exact rendered subject. Media production, dashboard mutation, and publication are not yet implemented; report those capability limits instead of simulating them.
 
