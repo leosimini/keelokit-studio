@@ -2,7 +2,11 @@
 import {resolve} from "node:path";
 import {validateContracts} from "../src/contracts/validate.mjs";
 
-const directory = resolve(process.argv[2] ?? "fixtures/contracts/field-service");
+if (!process.argv[2]) {
+  console.error("Usage: validate-contracts <contracts-directory>");
+  process.exit(2);
+}
+const directory = resolve(process.argv[2]);
 
 try {
   const result = await validateContracts(directory);
