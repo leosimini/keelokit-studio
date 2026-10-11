@@ -49,3 +49,20 @@ test("cannot pass QA without a completed observation", () => {
   const notRun = createIndependentQaReport({manifest, reviewer: "reviewer", reviewedAt: "2026-10-11T15:00:00.000Z", observations: [{kind: "visual", status: "not-run", note: "Not inspected"}], completeMediaInspected: true});
   assert.equal(notRun.verdict, "limited");
 });
+
+function box(type, payload = Buffer.alloc(0)) {
+  const header = Buffer.alloc(8);
+  header.writeUInt32BE(8 + payload.length, 0);
+  header.write(type, 4, "latin1");
+  return Buffer.concat([header, payload]);
+}
+
+test("does not trust a self-declared probe for bytes that are not the declared container", () => {
+  const probe = {decodable: true, width: 1920, height: 1080, duration_seconds: 10};
+  const fake = createExportManifest({pieceId: "piece-one", requestedVariants: ["video"], artifacts: [{variant: "video", content_type: "video/mp4", bytes: Buffer.from("NOT A VIDEO"), probe}]});
+  assert.equal(fake.status, "failed");
+  const withoutMoov = createExportManifest({pieceId: "piece-one", requestedVariants: ["video"], artifacts: [{variant: "video", content_type: "video/mp4", bytes: Buffer.concat([box("ftyp", Buffer.from("isom0000")), box("mdat", Buffer.alloc(16))]), probe}]});
+  assert.equal(withoutMoov.status, "failed");
+  const structural = createExportManifest({pieceId: "piece-one", requestedVariants: ["video"], artifacts: [{variant: "video", content_type: "video/mp4", bytes: Buffer.concat([box("ftyp", Buffer.from("isom0000")), box("mdat", Buffer.alloc(16)), box("moov", Buffer.alloc(8))]), probe}]});
+  assert.equal(structural.status, "passed");
+});

@@ -67,13 +67,28 @@ function subtitles(bytes, contentType) {
   return {characters: text.length};
 }
 
+function assertMp4Structure(bytes) {
+  const types = [];
+  for (let offset = 0; offset + 8 <= bytes.length;) {
+    const size = bytes.readUInt32BE(offset);
+    if (size < 8 || offset + size > bytes.length) throw new ExportQaError("MP4 box structure is truncated or corrupt");
+    types.push(bytes.toString("latin1", offset + 4, offset + 8));
+    offset += size;
+  }
+  if (types[0] !== "ftyp" || !types.includes("moov")) throw new ExportQaError("MP4 requires an ftyp header and a moov box");
+}
+
 function inspectArtifact(artifact) {
   if (!artifact || typeof artifact.variant !== "string" || !artifact.variant || !Buffer.isBuffer(artifact.bytes) || artifact.bytes.length === 0 || typeof artifact.content_type !== "string") throw new ExportQaError("Export artifact requires variant, content type and non-empty bytes");
   let media = {};
   if (artifact.content_type === "image/png") media = pngDimensions(artifact.bytes);
   else if (artifact.content_type === "audio/wav") media = measureWav(artifact.bytes);
   else if (["text/vtt", "application/x-subrip"].includes(artifact.content_type)) media = subtitles(artifact.bytes, artifact.content_type);
-  else if (artifact.probe?.decodable === true) media = {width: artifact.probe.width ?? null, height: artifact.probe.height ?? null, duration_seconds: artifact.probe.duration_seconds ?? null};
+  else if (artifact.probe?.decodable === true) {
+    if (artifact.content_type !== "video/mp4") throw new ExportQaError(`No structural container check exists for ${artifact.content_type}`);
+    assertMp4Structure(artifact.bytes);
+    media = {width: artifact.probe.width ?? null, height: artifact.probe.height ?? null, duration_seconds: artifact.probe.duration_seconds ?? null};
+  }
   else throw new ExportQaError(`No decodability measurement is available for ${artifact.content_type}`);
   return {variant: artifact.variant, content_type: artifact.content_type, sha256: createHash("sha256").update(artifact.bytes).digest("hex"), bytes: artifact.bytes.length, ...media};
 }
