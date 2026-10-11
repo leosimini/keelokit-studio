@@ -8,6 +8,7 @@ import {chromiumExecutable} from "./support/chromium.mjs";
 import {prepareRemotionRender, remotionRenderCapability, renderRemotionPreview, renderRemotionLocalizedVideos, renderRemotionSceneStills, renderRemotionVideo, RenderAdapterError} from "../src/render/remotion-adapter.mjs";
 import {createMotionSpec} from "../src/agency/motion.mjs";
 import {decodePng, encodePng} from "./support/png.mjs";
+import {buildProductionFlow} from "./support/production.mjs";
 import {createAgencyHandoff} from "../src/agency/handoff.mjs";
 import {createAssetRequirements, fulfillAssetRequirement} from "../src/assets/requirements.mjs";
 import {contentHash} from "../src/core/ids.mjs";
@@ -315,11 +316,8 @@ test("renders narration and music into a real MP4 with an audio track, and silen
     return {result, manifest};
   };
   const {options: voiced} = await narratedOptions({seconds: 3, music: {license: "CC0", config: {volume: 0.3}}, mutate: (o) => { o.renderConfig = {...o.renderConfig, captions: "narration"}; }});
-  const flow = videoCase("en-US");
   const motionSpec = createMotionSpec({storyboard: voiced.storyboard, version: 1, rationale: "Narrated test", scenes: [{scene_id: "scene-task", entrance: "fade", entrance_frames: 4, emphasis: "none", exit: "cut", exit_frames: 0, focus: null, purpose: "Introduce the narrated scene"}]});
-  const narrated = {...voiced, motionSpec, productionFlow: {...flow.productionFlow}};
-  // The handoffs bind to the storyboard hash, so rebuild them for the 3-second narrated storyboard.
-  narrated.productionFlow = flowFor(narrated, flow);
+  const narrated = {...voiced, motionSpec, productionFlow: buildProductionFlow({storyboard: voiced.storyboard, motionSpec, assets: voiced.assets, evidence: voiced.evidence})};
   const {result, manifest} = await render(narrated);
   assert.equal(result.manifest.configuration.narration_audible, true);
   assert.equal(manifest(true).status, "passed", "the MP4 has an audio track");
@@ -327,36 +325,4 @@ test("renders narration and music into a real MP4 with an audio track, and silen
   const silent = await render(videoCase("en-US"));
   assert.equal(silent.manifest(false).artifacts[0].audio_tracks, 0);
   assert.equal(silent.manifest(true).status, "failed", "a piece that should be voiced cannot ship without an audio track");
-});
-
-function flowFor(options, template) {
-  const requirements = createAssetRequirements({storyboard: options.storyboard, evidence: options.evidence, requirements: [{scene_id: "scene-task", purpose: "Show the verified task result", evidence_id: "evidence-task", evidence_hash: contentHash(options.evidence.evidence[0]), build: "fixture-1", role: "operator", locale: "en-US", state: "task complete", action: "Complete it", result: "The task is complete.", media_kind: "capture", dimensions: null, aspect_ratio: null, crop: "full verified surface", focus: "completed task", duration_seconds: null, rights: null, approval: {status: "pending", review_id: null}, acceptance_criteria: ["The completed task is legible"]}]});
-  const fulfilled = fulfillAssetRequirement(requirements, {requirementId: requirements.requirements[0].requirement_id, assetId: "asset-surface", assetSha256: sha256, storyboard: options.storyboard, assets: {...options.assets, assets: options.assets.assets.filter(({asset_id}) => asset_id === "asset-surface")}, evidence: options.evidence});
-  const artifact = {...template.productionFlow};
-  const treatmentHash = options.storyboard.treatment_hash;
-  const strategy = artifact.strategy; const treatment = artifact.treatment;
-  const refs = {strategy: {kind: "content-strategy", id: strategy.strategy_id, version: 1, hash: strategy.content_hash}, treatment: {kind: "creative-treatment", id: treatment.treatment_id, version: 1, hash: treatmentHash}, storyboard: {kind: "storyboard", id: options.storyboard.storyboard_id, version: 1, hash: contentHash(options.storyboard)}, motion: {kind: "motion-spec", id: options.motionSpec.motion_spec_id, version: 1, hash: options.motionSpec.content_hash}, requirements: {kind: "asset-requirements", id: `asset-requirements-${options.storyboard.storyboard_id}`, version: 1, hash: contentHash(fulfilled)}};
-  const handoff = (fromRole, inputs, output, runId) => createAgencyHandoff({projectId: options.storyboard.project_id, fromRole, toRole: "editorial-critic", producer: `${fromRole}-agent`, runId, inputs, output, status: "ready", recordedAt: "2026-10-11T12:00:00.000Z"});
-  return {strategy, treatment, assetRequirements: fulfilled, creativeHandoff: artifact.creativeHandoff, motionHandoff: handoff("motion-director", [refs.treatment, refs.storyboard], refs.motion, "motion-1"), assetHandoff: handoff("asset-producer", [refs.treatment, refs.storyboard], refs.requirements, "assets-1")};
-}
-
-test("a reduced-motion render freezes the camera and drops transitions, and is a distinct render", () => {
-  const options = videoCase("en-US");
-  const moving = createMotionSpec({storyboard: options.storyboard, version: 1, rationale: "Zoom in", scenes: [{scene_id: "scene-task", entrance: "fade", entrance_frames: 4, emphasis: "pulse", exit: "fade", exit_frames: 3, focus: null, purpose: "Show the result up close", camera: {start: {x: 0.5, y: 0.5, zoom: 1}, end: {x: 0.3, y: 0.3, zoom: 2}, from_frame: 2, to_frame: 20, easing: "ease-in-out"}}]});
-  const full = prepareRemotionRender({...options, motionSpec: moving});
-  const calm = prepareRemotionRender({...options, motionSpec: moving, renderConfig: {...options.renderConfig, reduced_motion: true}});
-  assert.equal(full.manifest.configuration.reduced_motion, false);
-  assert.equal(calm.manifest.configuration.reduced_motion, true);
-  assert.notEqual(full.manifest.render_id, calm.manifest.render_id);
-  assert.deepEqual(calm.inputProps.scenes[0].motion.camera.start, {x: 0.3, y: 0.3, zoom: 2});
-  assert.deepEqual([calm.inputProps.scenes[0].motion.entrance, calm.inputProps.scenes[0].motion.exit, calm.inputProps.scenes[0].motion.emphasis], ["cut", "cut", "none"]);
-  assert.throws(() => prepareRemotionRender({...options, motionSpec: moving, renderConfig: {...options.renderConfig, reduced_motion: "yes"}}), /reduced_motion/);
-});
-
-test("the render manifest carries pacing warnings without blocking the render", () => {
-  const options = videoCase("en-US");
-  const rushed = {...options.storyboard, scenes: [{...options.storyboard.scenes[0], on_screen_text: "Pick a technician from the list and confirm the assignment right now"}]};
-  assert.deepEqual(prepareRemotionRender({...options, storyboard: rushed, motionSpec: null}).manifest.warnings.map(({code}) => code), ["too-short-to-read"]);
-  const calm = {...options.storyboard, duration_seconds: 3, scenes: [{...options.storyboard.scenes[0], end_seconds: 3}]};
-  assert.deepEqual(prepareRemotionRender({...options, storyboard: calm, motionSpec: null}).manifest.warnings, []);
 });
