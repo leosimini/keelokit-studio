@@ -43,3 +43,7 @@ unresolved_gaps: [{gap, impact, resolution}]
 Persist each transition with `createAgencyHandoff`; prose alone is not a valid handoff. Before timed production, `assertProductionHandoffs` validates the exact strategy → treatment, treatment/storyboard → motion, and treatment/storyboard → asset-requirements chain. It also checks current motion and asset contracts, rejects unresolved requirements, and requires every selected scene asset to fulfill an exact requirement. `renderRemotionVideo` enforces this production-flow input. Existing asset verification remains responsible for capture and inventory acceptance.
 
 Authors cannot mark their work editorially passed. The editorial critic remains an independent reader of the actual script, storyboard, assets and rendered preview. A validated treatment does not establish editorial quality, accessibility compliance, rendering correctness, human style approval or publication readiness.
+
+## Hook rules
+
+A selected hook must be an evidence-backed claim (verbatim from `claims`) or neutral framing without figures, percentages or absolutes such as "guaranteed", "never" or "only". The storyboard must show the selected hook in its first scene.
