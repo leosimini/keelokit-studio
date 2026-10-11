@@ -232,19 +232,38 @@ export async function renderRemotionVideo(options) {
   } finally { await rm(bundleDirectory, {recursive: true, force: true}); }
 }
 
-export async function renderRemotionPreview(options) {
+async function renderStillFrames(options, frameFor) {
   const capability = await remotionRenderCapability({browserExecutable: options.browserExecutable});
   if (capability.status !== "available") throw new RenderAdapterError(capability.reason, "render_capability_unavailable");
   const prepared = prepareRemotionRender(options);
+  const frames = frameFor(prepared.inputProps.scenes);
   const bundleDirectory = await mkdtemp(resolve(tmpdir(), "keelokit-studio-remotion-"));
   try {
     const [{bundle}, {renderStill, selectComposition}] = await Promise.all([import("@remotion/bundler"), import("@remotion/renderer")]);
     const serveUrl = await bundle({entryPoint: resolve(import.meta.dirname, "entry.mjs"), outDir: bundleDirectory, enableCaching: false, logLevel: "error"});
     const composition = await selectComposition({serveUrl, id: "KeelokitStudioPiece", inputProps: prepared.inputProps, browserExecutable: options.browserExecutable, logLevel: "error"});
-    const result = await renderStill({serveUrl, composition, inputProps: prepared.inputProps, browserExecutable: options.browserExecutable, imageFormat: "png", output: null, logLevel: "error"});
-    if (!result.buffer) throw new RenderAdapterError("Remotion did not return an in-memory preview", "render_failed");
-    return {...prepared, artifact: {kind: "preview", content_type: result.contentType, bytes: result.buffer, sha256: createHash("sha256").update(result.buffer).digest("hex")}};
+    const stills = [];
+    for (const {scene_id, frame} of frames) {
+      const result = await renderStill({serveUrl, composition, inputProps: prepared.inputProps, browserExecutable: options.browserExecutable, imageFormat: "png", frame, output: null, logLevel: "error"});
+      if (!result.buffer) throw new RenderAdapterError("Remotion did not return an in-memory preview", "render_failed");
+      stills.push({scene_id, frame, artifact: {kind: "preview", content_type: result.contentType, bytes: result.buffer, sha256: createHash("sha256").update(result.buffer).digest("hex")}});
+    }
+    return {prepared, stills};
   } finally {
     await rm(bundleDirectory, {recursive: true, force: true});
   }
+}
+
+const midpoint = (scene) => ({scene_id: scene.scene_id, frame: scene.from_frame + Math.floor(scene.duration_frames / 2)});
+
+// One still at the midpoint of the first scene: frame 0 can be an entrance fade that shows only the background.
+export async function renderRemotionPreview(options) {
+  const {prepared, stills} = await renderStillFrames(options, (scenes) => [midpoint([...scenes].sort((left, right) => left.from_frame - right.from_frame)[0])]);
+  return {...prepared, artifact: stills[0].artifact};
+}
+
+// A still at the midpoint of every scene, so a reviewer sees each scene's asset and copy, not only the opening.
+export async function renderRemotionSceneStills(options) {
+  const {prepared, stills} = await renderStillFrames(options, (scenes) => [...scenes].sort((left, right) => left.from_frame - right.from_frame).map(midpoint));
+  return {...prepared, stills};
 }

@@ -5,7 +5,7 @@ import {access, mkdtemp, rm, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {resolve} from "node:path";
 import {chromiumExecutable} from "./support/chromium.mjs";
-import {prepareRemotionRender, remotionRenderCapability, renderRemotionPreview, renderRemotionVideo, RenderAdapterError} from "../src/render/remotion-adapter.mjs";
+import {prepareRemotionRender, remotionRenderCapability, renderRemotionPreview, renderRemotionSceneStills, renderRemotionVideo, RenderAdapterError} from "../src/render/remotion-adapter.mjs";
 import {createMotionSpec} from "../src/agency/motion.mjs";
 import {createAgencyHandoff} from "../src/agency/handoff.mjs";
 import {createAssetRequirements, fulfillAssetRequirement} from "../src/assets/requirements.mjs";
@@ -157,4 +157,14 @@ test("subtitles must come from scene text and the manifest states that no audio 
   assert.equal(manifest.configuration.audio_tracks, 0);
   assert.equal(manifest.configuration.narration_audible, false);
   assert.deepEqual(manifest.configuration.subtitled_scene_ids, ["scene-task"]);
+});
+
+test("renders a still at the midpoint of every scene, not only frame 0", {timeout: 180000}, async (context) => {
+  const capability = await remotionRenderCapability({browserExecutable: chromiumExecutable});
+  if (capability.status !== "available") return context.skip(capability.reason);
+  const two = {...storyboard, duration_seconds: 2, scenes: [{...storyboard.scenes[0], scene_id: "scene-a", start_seconds: 0, end_seconds: 1}, {...storyboard.scenes[0], scene_id: "scene-b", start_seconds: 1, end_seconds: 2, asset_ids: [], on_screen_text: "Second scene copy"}]};
+  const config = {...renderConfig, scene_components: {"scene-a": "browser", "scene-b": "title"}};
+  const result = await renderRemotionSceneStills({...input({storyboard: two, renderConfig: config}), browserExecutable: chromiumExecutable});
+  assert.deepEqual(result.stills.map(({scene_id, frame}) => [scene_id, frame]), [["scene-a", 15], ["scene-b", 45]]);
+  assert.notEqual(result.stills[0].artifact.sha256, result.stills[1].artifact.sha256);
 });
