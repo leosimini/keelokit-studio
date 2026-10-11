@@ -47,6 +47,14 @@ test("rejects missing evidence, mismatched assets, and implicit component or lay
   assert.throws(() => prepareRemotionRender(input({assets: {...assets, assets: [{...asset, depends_on: [{type: "evidence", id: "missing", sha256: null}]}]}})), /unknown evidence dependency/);
 });
 
+test("rejects silently dropping extra scene assets", () => {
+  const duplicated = {...storyboard, scenes: [{...storyboard.scenes[0], asset_ids: [asset.asset_id, asset.asset_id]}]};
+  assert.throws(() => prepareRemotionRender(input({storyboard: duplicated})), /duplicate asset/);
+  const second = {...asset, asset_id: "asset-second", path: "media/studio/assets/second.png", origin: {...asset.origin, source: "media/studio/assets/second.png"}};
+  const multi = {...storyboard, scenes: [{...storyboard.scenes[0], asset_ids: [asset.asset_id, second.asset_id]}]};
+  assert.throws(() => prepareRemotionRender(input({storyboard: multi, assets: {...assets, assets: [asset, second]}, assetSources: {...input().assetSources, "asset-second": assetSource}})), /multiple visual assets/);
+});
+
 test("quantizes adjacent scene boundaries without overlap", () => {
   const scenes = [["one", 0, 0.05], ["two", 0.05, 0.1], ["three", 0.1, 0.15]].map(([scene_id, start_seconds, end_seconds]) => ({...storyboard.scenes[0], scene_id, start_seconds, end_seconds}));
   const candidate = {...storyboard, duration_seconds: 0.15, scenes};

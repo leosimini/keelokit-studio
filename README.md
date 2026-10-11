@@ -2,7 +2,9 @@
 
 Keelokit Studio is a generic Claude Code plugin for evidence-backed product marketing. It is designed to discover product context, close relevant gaps, define audiences and strategy, require explicit approvals, and produce reviewable explainers, tutorials, guides, and social adaptations.
 
-`/keelokit-studio:start` persists and resumes discovery, selective intake, audiences, brief, planning, exact approvals, evidence, production, independent QA and distribution preparation. The initial release includes web capture, contributed material, readable evidence-bound production scripts, an independent adversarial editorial critic, Remotion previews/exports, optional voice contracts, evidence-derived guides and a persistent local dashboard. Unsupported surfaces remain explicitly blocked.
+`/keelokit-studio:start` persists and resumes discovery, selective intake, audiences, brief, planning, exact approvals, evidence, production, independent QA and distribution preparation. Studio now uses explicit specialist handoffs: a cited portfolio strategist ranks what to produce and publish; a creative director develops competing hooks and a treatment; motion and asset specialists specify every beat and required proof; an independent adversarial critic evaluates the resulting script, assets and timed preview. Recipes are documented hypotheses with sources and limitations, never performance guarantees.
+
+The implementation includes web capture, contributed material, evidence-bound scripts, exact asset requirements, a small validated motion vocabulary, real Remotion PNG/MP4 rendering, optional voice-provider contracts, evidence-derived guides, attributed post-publication observations and a persistent local dashboard. Unsupported surfaces, missing proof, stale handoffs and absent owner approvals remain explicitly blocked.
 
 ## Development checks
 
@@ -21,7 +23,7 @@ The installation test uses an isolated Claude Code configuration and a temporary
 npm run dashboard -- /absolute/path/to/consumer-project 4317
 ```
 
-The loopback dashboard persists suite progress, blockers, previews, exports, revision history and manual publication annotations under `.keelokit/studio/`. Studio prepares channel packages but never publishes automatically.
+The loopback dashboard persists suite progress, blockers, previews, exports, revision history, ranked publication recommendations and manual publication annotations under `.keelokit/studio/`. Refresh projection is idempotent and retains prior publication history. Studio prepares channel packages but never publishes automatically.
 
 ## Development loading
 

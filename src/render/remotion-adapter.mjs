@@ -88,7 +88,7 @@ export async function remotionRenderCapability({browserExecutable}) {
     await access(browserExecutable, constants.X_OK);
     const version = await execFileAsync(browserExecutable, ["--version"], {timeout: 5000, maxBuffer: 1024 * 1024});
     if (!/Chrom(?:e|ium)/i.test(`${version.stdout}\n${version.stderr}`)) throw new Error("Not a Chromium-compatible browser");
-    return {status: "available", adapter: "remotion", version: "4.0.534", browser_executable: browserExecutable, outputs: ["png-preview"], licensing: "Remotion licensing eligibility must be confirmed by the installing organization"};
+    return {status: "available", adapter: "remotion", version: "4.0.534", browser_executable: browserExecutable, outputs: ["png-preview", "mp4-video"], licensing: "Remotion licensing eligibility must be confirmed by the installing organization"};
   } catch {
     return {status: "blocked", adapter: "remotion", version: "4.0.534", reason: "Configured browser executable is unavailable", licensing: "Remotion licensing eligibility must be confirmed by the installing organization"};
   }
@@ -130,6 +130,7 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
     const component = sceneComponents[scene.scene_id];
     if (!components.has(component)) throw new RenderAdapterError(`Scene ${scene.scene_id} requires a supported component selection`);
     for (const evidenceId of scene.evidence_ids) if (!evidenceSet.has(evidenceId)) throw new RenderAdapterError(`Scene ${scene.scene_id} references unknown evidence ${evidenceId}`);
+    if (scene.asset_ids.length > 1) throw new RenderAdapterError(`Scene ${scene.scene_id} declares multiple visual assets, but the current composition supports one; split the scene or choose an explicit composite asset`);
     for (const assetId of scene.asset_ids) {
       if (!assetsById.has(assetId)) throw new RenderAdapterError(`Scene ${scene.scene_id} references unknown asset ${assetId}`);
       if (!Object.hasOwn(sourceMap, assetId)) throw new RenderAdapterError(`Scene ${scene.scene_id} asset ${assetId} has no hash-verified render source`);
@@ -151,8 +152,8 @@ export function prepareRemotionRender({storyboard, brand, assets, evidence, asse
       duration_frames: Math.round(scene.end_seconds * storyboard.fps) - Math.round(scene.start_seconds * storyboard.fps),
       subtitle: Object.hasOwn(subtitles, scene.scene_id) ? subtitles[scene.scene_id] : "",
       step_label: Object.hasOwn(stepLabels, scene.scene_id) ? stepLabels[scene.scene_id] : null,
-      highlight: Object.hasOwn(highlights, scene.scene_id) ? highlights[scene.scene_id] : null
-      ,motion: motionByScene.get(scene.scene_id) ?? {entrance: "cut", entrance_frames: 0, emphasis: "none", exit: "cut", exit_frames: 0, focus: null, purpose: "Static compatibility render"}
+      highlight: Object.hasOwn(highlights, scene.scene_id) ? highlights[scene.scene_id] : null,
+      motion: motionByScene.get(scene.scene_id) ?? {entrance: "cut", entrance_frames: 0, emphasis: "none", exit: "cut", exit_frames: 0, focus: null, purpose: "Static compatibility render"}
     };
   });
   if (scenes.some(({duration_frames}) => duration_frames < 1)) throw new RenderAdapterError("Every scene must occupy at least one frame");
