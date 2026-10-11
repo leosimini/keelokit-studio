@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keelokit.com/studio/schemas/v1/distribution-plan.schema.json",
+  "title": "Keelokit Studio distribution plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project_id", "distribution_plan_id", "version", "source_plan", "packages"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "project_id": {"type": "string", "minLength": 1},
+    "distribution_plan_id": {"type": "string", "minLength": 1},
+    "version": {"type": "integer", "minimum": 1},
+    "source_plan": {
+      "type": "object", "additionalProperties": false, "required": ["plan_id", "version", "hash"],
+      "properties": {"plan_id": {"type": "string", "minLength": 1}, "version": {"type": "integer", "minimum": 1}, "hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}}
+    },
+    "packages": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["package_id", "piece_id", "public_title", "description", "cta", "variants", "channels", "publication_status"],
+        "properties": {
+          "package_id": {"type": "string", "minLength": 1}, "piece_id": {"type": "string", "minLength": 1},
+          "public_title": {"type": "string", "minLength": 1}, "description": {"type": "string", "minLength": 1}, "cta": {"type": "string", "minLength": 1},
+          "variants": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["variant_id", "public_name", "format", "export_manifest_id", "artifact_sha256"], "properties": {"variant_id": {"type": "string", "minLength": 1}, "public_name": {"type": "string", "minLength": 1}, "format": {"type": "string", "minLength": 1}, "export_manifest_id": {"type": "string", "minLength": 1}, "artifact_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}}},
+          "channels": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["channel", "placement", "series", "capability_status", "proposal_only"], "properties": {"channel": {"type": "string", "minLength": 1}, "placement": {"type": ["string", "null"]}, "series": {"type": ["string", "null"]}, "capability_status": {"enum": ["verified", "unverified", "unsupported"]}, "proposal_only": {"const": true}}}},
+          "publication_status": {"const": "not-published"}
+        }
+      }
+    }
+  }
+}

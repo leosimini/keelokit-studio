@@ -113,3 +113,15 @@ test("invalidation histories cannot mutate global rules", () => {
   assert.ok(second.pieces[0].invalidations[0].components.includes("qa"));
 });
 
+test("refreshes build and manual dependencies without invalidating unrelated pieces", () => {
+  const state = readyState("piece-a", "piece-b");
+  const build = invalidatePieces(state, {changeId: "build-2", changeType: "build", pieceIds: ["piece-a"]});
+  assert.equal(build.pieces[0].components.capture, "stale");
+  assert.equal(build.pieces[0].components.brand, "valid");
+  assert.equal(build.pieces[1].status, "ready");
+  const manual = invalidatePieces(state, {changeId: "manual-2", changeType: "manual", pieceIds: ["piece-a"]});
+  assert.equal(manual.pieces[0].components.evidence, "stale");
+  assert.equal(manual.pieces[0].components.capture, "valid");
+  assert.equal(manual.pieces[0].components.voice, "valid");
+});
+

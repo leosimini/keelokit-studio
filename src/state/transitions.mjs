@@ -20,6 +20,8 @@ const invalidationMap = {
   ui: ["evidence", "capture", "script", "voice", "composition", "render", "qa", "distribution"],
   role: ["evidence", "capture", "script", "voice", "composition", "render", "qa", "distribution"],
   journey: ["evidence", "capture", "script", "voice", "composition", "render", "qa", "distribution"],
+  build: ["evidence", "capture", "script", "voice", "composition", "render", "qa", "distribution"],
+  manual: ["evidence", "script", "composition", "render", "qa", "distribution"],
   brand: ["brand", "composition", "render", "qa", "distribution"],
   voice: ["voice", "composition", "render", "qa", "distribution"]
 };

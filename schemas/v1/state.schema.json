@@ -95,7 +95,7 @@
               "required": ["change_id", "change_type", "components", "recorded_at"],
               "properties": {
                 "change_id": {"type": "string", "minLength": 1},
-                "change_type": {"enum": ["title", "ui", "role", "journey", "brand", "voice"]},
+                "change_type": {"enum": ["title", "ui", "role", "journey", "build", "manual", "brand", "voice"]},
                 "components": {"type": "array", "items": {"enum": ["evidence", "capture", "script", "voice", "brand", "composition", "render", "qa", "distribution"]}, "minItems": 1, "uniqueItems": true},
                 "recorded_at": {"type": "string", "minLength": 1}
               }
@@ -129,6 +129,8 @@
           "status": {"enum": ["prepared", "submitted", "uncertain", "running", "succeeded", "failed"]},
           "attempts": {"type": "integer", "minimum": 0},
           "known_cost": {"type": ["number", "null"], "minimum": 0}
+          ,"reserved_cost": {"type": "number", "minimum": 0}
+          ,"currency": {"type": ["string", "null"]}
         }
       }
     },

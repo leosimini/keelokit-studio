@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keelokit.com/studio/schemas/v1/guide.schema.json",
+  "title": "Keelokit Studio evidence-derived guide",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "guide_id", "version", "project_id", "piece_id", "storyboard_id", "storyboard_version", "title", "audience_id", "language", "sections", "manual_references", "gaps"],
+  "properties": {
+    "schema_version": {"const": 1}, "guide_id": {"type": "string", "minLength": 1}, "version": {"type": "integer", "minimum": 1},
+    "project_id": {"type": "string", "minLength": 1}, "piece_id": {"type": "string", "minLength": 1}, "storyboard_id": {"type": "string", "minLength": 1}, "storyboard_version": {"type": "integer", "minimum": 1},
+    "title": {"type": "string", "minLength": 1}, "audience_id": {"type": "string", "minLength": 1}, "language": {"type": "string", "minLength": 1},
+    "sections": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["section_id", "kind", "texts", "evidence_ids", "asset_ids"], "properties": {"section_id": {"type": "string", "minLength": 1}, "kind": {"type": "string", "minLength": 1}, "texts": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true}, "evidence_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true}, "asset_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}}}},
+    "manual_references": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["source_id", "path", "sha256", "relationship"], "properties": {"source_id": {"type": "string", "minLength": 1}, "path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "relationship": {"const": "reference-only"}}}},
+    "gaps": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+  }
+}
